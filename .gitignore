@@ -1,0 +1,127 @@
+# Environnement virtuel Python
+barreau/
+venv/
+env/
+ENV/
+.env/
+.venv/
+
+# Fichiers de variables d'environnement (contiennent des données sensibles)
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# Fichiers de cache Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+pip-wheel-metadata/
+share/python-wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# Fichiers de base de données
+*.db
+*.sqlite
+*.sqlite3
+*.db-journal
+*.sql
+migrations/versions/*  # Exclut les fichiers de migration générés (gardez le dossier migrations/ mais pas les fichiers .py générés)
+
+# Fichiers de logs et temporaires
+*.log
+logs/
+.npm
+.npmrc
+.nvmrc
+.node_repl_history
+
+# Fichiers IDE et éditeurs
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Fichiers de coverage et tests
+.coverage
+.coverage.*
+.cache
+nosetests.xml
+coverage.xml
+*.cover
+*.py,cover
+.hypothesis/
+.pytest_cache/
+
+# Fichiers de déploiement
+instance/
+.webassets-cache
+.scrapy
+
+# Fichiers macOS
+.AppleDouble
+.LSOverride
+Icon
+._*
+
+# Fichiers Windows
+[Tt]humbs.db
+
+# Fichiers divers
+celerybeat-schedule
+celerybeat.pid
+.mypy_cache/
+.dmypy.json
+dmypy.json
+
+# Fichiers de sauvegarde
+*.bak
+*.backup
+*.tmp
+*.temp
+
+# Fichiers de package
+*.7z
+*.dmg
+*.gz
+*.iso
+*.jar
+*.rar
+*.tar
+*.zip
+
+# Fichiers de documentation générés
+_site/
+.sass-cache/
+.jekyll-cache/
+.sass-cache/
+.jekyll-metadata
+
+# Fichiers spécifiques à ce projet
+# (Ajoutez ici les fichiers spécifiques à votre projet qui ne doivent pas être versionnés)
