@@ -5,6 +5,7 @@ env/
 ENV/
 .env/
 .venv/
+.qodo/
 
 # Fichiers de variables d'environnement (contiennent des données sensibles)
 .env

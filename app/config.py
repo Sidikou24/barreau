@@ -10,7 +10,7 @@ class Config:
     
     # Configuration PostgreSQL
     SQLALCHEMY_DATABASE_URI = os.environ.get('DATABASE_URL') or \
-        'postgresql://postgres:password@localhost:5432/barreau_niger'
+        'postgresql://postgres:hama@localhost:5432/barreau_niger'
     SQLALCHEMY_TRACK_MODIFICATIONS = False
     
     # Configuration des sessions
