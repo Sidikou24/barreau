@@ -6,7 +6,7 @@ class Avocat(db.Model):
     __tablename__ = 'avocats'
     
     avocat_id = db.Column(db.Integer, primary_key=True)
-    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), unique=True, nullable=False)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id', ondelete="CASCADE"), unique=True, nullable=False)
     nom = db.Column(db.String(100), nullable=False)
     naissance = db.Column(db.Date, nullable=False)
     sexe = db.Column(db.Enum('M', 'F', name='sexe_type'), nullable=False)
