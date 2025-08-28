@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <title>{% block title %}Barreau du Niger{% endblock %}</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+    <!-- Navbar -->
+    <nav style="background:#003366; padding:10px; color:white;">
+        <span><b>Barreau du Niger</b></span>
+        {% if current_user.is_authenticated %}
+            <span style="margin-left:20px;">
+                Connecté en tant que : {{ current_user.nom }} {{ current_user.prenom }} ({{ current_user.role }})
+            </span>
+            <span style="float:right;">
+                <a href="{{ url_for('auth.logout') }}" style="color:white;">Se déconnecter</a>
+            </span>
+        {% endif %}
+    </nav>
+
+    <!-- Contenu de chaque page -->
+    <main style="padding:20px;">
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                <ul>
+                    {% for category, message in messages %}
+                        <li style="color:
+                            {% if category == 'danger' %}red
+                            {% elif category == 'success' %}green
+                            {% elif category == 'warning' %}orange
+                            {% else %}black{% endif %}
+                        ">{{ message }}</li>
+                    {% endfor %}
+                </ul>
+            {% endif %}
+        {% endwith %}
+
+        {% block content %}{% endblock %}
+    </main>
+</body>
+</html>

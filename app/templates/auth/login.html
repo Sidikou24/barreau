@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Connexion - Barreau du Niger</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js" defer></script>
+    <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+        
+        * {
+            font-family: 'Inter', sans-serif;
+        }
+        
+        :root {
+            --background: 0 0% 100%;
+            --foreground: 222.2 84% 4.9%;
+            --card: 0 0% 100%;
+            --card-foreground: 222.2 84% 4.9%;
+            --primary: 222.2 47.4% 11.2%;
+            --primary-foreground: 210 40% 98%;
+            --secondary: 210 40% 96.1%;
+            --secondary-foreground: 222.2 47.4% 11.2%;
+            --muted: 210 40% 96.1%;
+            --muted-foreground: 215.4 16.3% 46.9%;
+            --destructive: 0 84.2% 60.2%;
+            --destructive-foreground: 210 40% 98%;
+            --border: 214.3 31.8% 91.4%;
+            --input: 214.3 31.8% 91.4%;
+        }
+        
+        .bg-background { background-color: hsl(var(--background)); }
+        .text-foreground { color: hsl(var(--foreground)); }
+        .bg-card { background-color: hsl(var(--card)); }
+        .text-card-foreground { color: hsl(var(--card-foreground)); }
+        .bg-primary { background-color: hsl(var(--primary)); }
+        .text-primary { color: hsl(var(--primary)); }
+        .text-primary-foreground { color: hsl(var(--primary-foreground)); }
+        .bg-muted { background-color: hsl(var(--muted)); }
+        .text-muted-foreground { color: hsl(var(--muted-foreground)); }
+        .border-border { border-color: hsl(var(--border)); }
+        .bg-destructive { background-color: hsl(var(--destructive)); }
+        .text-destructive-foreground { color: hsl(var(--destructive-foreground)); }
+        
+        .card {
+            background-color: hsl(var(--card));
+            border: 1px solid hsl(var(--border));
+            border-radius: 0.5rem;
+            box-shadow: 0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1);
+        }
+        
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            white-space: nowrap;
+            border-radius: 0.375rem;
+            font-size: 0.875rem;
+            font-weight: 500;
+            transition: all 150ms cubic-bezier(0.4, 0, 0.2, 1);
+            padding: 0.5rem 1rem;
+            cursor: pointer;
+            border: none;
+            text-decoration: none;
+        }
+        
+        .btn-primary {
+            background-color: hsl(var(--primary));
+            color: hsl(var(--primary-foreground));
+        }
+        
+        .btn-primary:hover {
+            background-color: hsl(var(--primary) / 0.9);
+        }
+        
+        .btn-primary:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        
+        .input {
+            display: flex;
+            height: 2.5rem;
+            width: 100%;
+            border-radius: 0.375rem;
+            border: 1px solid hsl(var(--border));
+            background-color: hsl(var(--background));
+            padding: 0.5rem 0.75rem;
+            font-size: 0.875rem;
+            transition: all 150ms cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        
+        .input:focus {
+            outline: none;
+            border-color: hsl(var(--primary));
+            box-shadow: 0 0 0 2px hsl(var(--primary) / 0.2);
+        }
+        
+        .input::placeholder {
+            color: hsl(var(--muted-foreground));
+        }
+        
+        .alert {
+            border-radius: 0.375rem;
+            border: 1px solid;
+            padding: 1rem;
+        }
+        
+        .alert-destructive {
+            border-color: hsl(var(--destructive));
+            background-color: hsl(var(--destructive) / 0.1);
+            color: hsl(var(--destructive));
+        }
+        
+        .label {
+            font-size: 0.875rem;
+            font-weight: 500;
+            line-height: 1;
+        }
+    </style>
+</head>
+<body class="bg-background text-foreground" x-data="loginForm">
+    <div class="min-h-screen flex items-center justify-center p-4">
+        <div class="card w-full max-w-md">
+            <div class="text-center p-6 pb-0">
+                <div class="flex justify-center mb-4">
+                    <div class="flex h-12 w-12 items-center justify-center rounded-lg bg-primary text-primary-foreground">
+                        <i data-lucide="scale" class="h-6 w-6"></i>
+                    </div>
+                </div>
+                <h1 class="text-2xl font-semibold">Barreau du Niger</h1>
+                <p class="text-muted-foreground">
+                    Système de gestion administrative
+                </p>
+            </div>
+            <div class="p-6">
+                <form method="POST" action="{{ url_for('auth.login') }}" class="space-y-4">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+                    <div class="space-y-2">
+                        <label for="email" class="label">Email</label>
+                        <input
+                            id="email"
+                            name="email"
+                            type="email"
+                            required
+                            placeholder="votre.email@barreau.ne"
+                            class="input"
+                        />
+                    </div>
+                    <div class="space-y-2">
+                        <label for="password" class="label">Mot de passe</label>
+                        <input
+                            id="password"
+                            name="password"
+                            type="password"
+                            required
+                            placeholder="••••••••"
+                            class="input"
+                        />
+                    </div>
+
+                    {% with messages = get_flashed_messages(with_categories=true) %}
+                        {% if messages %}
+                            {% for category, message in messages %}
+                                <div class="alert alert-destructive">
+                                    {{ message }}
+                                </div>
+                            {% endfor %}
+                        {% endif %}
+                    {% endwith %}
+
+                    <button type="submit" class="btn btn-primary w-full">
+                        Se connecter
+                    </button>
+                </form>
+
+                
+                <!--<div class="mt-6 p-4 bg-muted rounded-lg">
+                    <p class="text-sm text-muted-foreground mb-2">Comptes de démonstration :</p>
+                    <div class="space-y-1 text-xs">
+                        <p><strong>Admin:</strong> admin@barreau.ne</p>
+                        <p><strong>Secrétaire de l'Ordre:</strong> secretaire@barreau.ne</p>
+                        <p><strong>Trésorière:</strong> treasurer@barreau.ne</p>
+                        <p><strong>Bâtonnier:</strong> batonnier@barreau.ne</p>
+                        <p><strong>Avocat:</strong> lawyer@barreau.ne</p>
+                        <p class="text-muted-foreground">Mot de passe: n'importe lequel</p>
+                    </div>
+                </div>-->
+            </div>
+        </div>
+    </div>
+
+    <script>
+       
+    </script>
+</body>
+</html>
