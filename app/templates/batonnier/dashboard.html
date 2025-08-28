@@ -56,11 +56,11 @@
                         </div>
                         <p class="text-sm text-muted-foreground">{{ user.email }}</p>
                         <p class="text-xs text-muted-foreground">
-                            {% if user.role == 'assistant_admin' %}Assistant Administratif
-                            {% elif user.role == 'secretary' %}Secrétaire de l'Ordre
-                            {% elif user.role == 'treasurer' %}Trésorière
+                            {% if user.role == 'assistant_administratif' %}Assistant Administratif
+                            {% elif user.role == 'secretaire' %}Secrétaire de l'Ordre
+                            {% elif user.role == 'tresorier' %}Trésorière
                             {% elif user.role == 'batonnier' %}Bâtonnier
-                            {% elif user.role == 'lawyer' %}Avocat
+                            {% elif user.role == 'avocat' %}Avocat
                             {% else %}{{ user.role|capitalize }}
                             {% endif %}
                         </p>
