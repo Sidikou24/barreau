@@ -22,9 +22,16 @@ class User(UserMixin, db.Model):
                       default='actif')
     date_creation = db.Column(db.DateTime, default=datetime.utcnow)
     cree_par = db.Column(db.Integer, db.ForeignKey('users.id'))
-    
+    must_change_password = db.Column(db.Boolean, default=True)
+
     # Relations
-    avocat_profile = db.relationship('Avocat', backref='user_account', uselist=False)
+    avocat_profile = db.relationship(
+        'Avocat',
+        backref='user_account',
+        uselist=False,
+        cascade="all, delete-orphan",   # 👈 Ici la magie
+        passive_deletes=True
+    )
     
     def set_password(self, password):
         self.password_hash = generate_password_hash(password)
