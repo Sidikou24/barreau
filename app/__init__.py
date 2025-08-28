@@ -3,6 +3,7 @@
 from flask import Flask, redirect, url_for
 from flask_sqlalchemy import SQLAlchemy
 from flask_login import LoginManager
+from flask_wtf.csrf import CSRFProtect
 from flask_migrate import Migrate
 from app.config import config
 
@@ -10,6 +11,7 @@ from app.config import config
 db = SQLAlchemy()
 login_manager = LoginManager()
 migrate = Migrate()
+csrf = CSRFProtect()
 
 def create_app(config_name='default'):
     app = Flask(__name__)
@@ -21,6 +23,7 @@ def create_app(config_name='default'):
     db.init_app(app)
     login_manager.init_app(app)
     migrate.init_app(app, db)
+    csrf.init_app(app)
     
     # Configuration de Flask-Login
     login_manager.login_view = 'auth.login'
