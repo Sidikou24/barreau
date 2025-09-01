@@ -38,7 +38,7 @@ class UserService:
                 sexe=data.get('sexe', 'M'),
                 telephone=user.telephone,
                 adresse=user.adresse,
-                qualification=data.get('qualification', 'stagiaire')
+                qualification=data.get('qualification', 'titulaire')
             )
             user.avocat_profile = avocat  # liaison via la relation ORM
             db.session.add(avocat)
@@ -76,7 +76,7 @@ class UserService:
                     sexe=data.get('sexe', 'M'),
                     telephone=user.telephone,
                     adresse=user.adresse,
-                    qualification=data.get('qualification', 'stagiaire')
+                    qualification=data.get('qualification', 'titulaire')
                 )
                 user.avocat_profile = avocat
             else:

@@ -63,7 +63,7 @@
                         <button class="btn btn-ghost" style="padding: 0.25rem 0.5rem;" @click="openEditDialog(user)">
                             <i data-lucide="edit" class="h-4 w-4"></i>
                         </button>
-                        <button 
+                        <!--<button 
                             class="btn btn-ghost" 
                             style="padding: 0.25rem 0.5rem;" 
                             @click="deleteUser(user.id)"
@@ -71,7 +71,7 @@
                             :class="{ 'opacity-50 cursor-not-allowed': user.id === currentUserId }"
                         >
                             <i data-lucide="trash-2" class="h-4 w-4"></i>
-                        </button>
+                        </button>-->
                     </div>
                 </div>
             </div>
@@ -102,6 +102,7 @@
                         <option value="secretaire">Secrétaire de l'Ordre</option>
                         <option value="tresorier">Trésorière</option>
                         <option value="batonnier">Bâtonnier</option>
+                        <option value="assistant_comptable">Comptable</option>
                         <option value="avocat">Avocat</option>
                     </select>
                 </div>
@@ -133,11 +134,12 @@
                     <label for="editRole" class="text-sm font-medium">Rôle *</label>
                     <select x-model="formData.role" required class="select">
                         <option value="">Sélectionner un rôle</option>
-                        <option value="assistant_admin">Assistant Administratif</option>
-                        <option value="secretary">Secrétaire de l'Ordre</option>
-                        <option value="treasurer">Trésorière</option>
+                        <option value="assistant_administratif">Assistant Administratif</option>
+                        <option value="secretaire">Secrétaire de l'Ordre</option>
+                        <option value="tresorier">Trésorière</option>
                         <option value="batonnier">Bâtonnier</option>
-                        <option value="lawyer">Avocat</option>
+                        <option value="assitant_comptable">Comptable</option>
+                        <option value="avocat">Avocat</option>
                     </select>
                 </div>
                 <div class="flex gap-2 pt-4">
@@ -150,155 +152,64 @@
 </div>
 
 <script>
-    document.addEventListener('alpine:init', () => {
-        Alpine.data('gestionUtilisateurs', () => ({
-            currentUserId: '1', // ID du bâtonnier connecté
-            searchTerm: '',
-            showCreateDialog: false,
-            showEditDialog: false,
-            selectedUser: null,
-            users: [
-                {
-                    id: '1',
-                    name: 'Maître Amadou DIALLO',
-                    email: 'batonnier@barreau.ne',
-                    role: 'batonnier',
-                    active: true
-                },
-                {
-                    id: '2',
-                    name: 'Admin Système',
-                    email: 'admin@barreau.ne',
-                    role: 'assistant_admin',
-                    active: true
-                },
-                {
-                    id: '3',
-                    name: 'Maître Aicha IBRAHIM',
-                    email: 'secretaire@barreau.ne',
-                    role: 'secretary',
-                    active: true
-                },
-                {
-                    id: '4',
-                    name: 'Maître Mariama HASSAN',
-                    email: 'treasurer@barreau.ne',
-                    role: 'treasurer',
-                    active: true
-                },
-                {
-                    id: '5',
-                    name: 'Maître Ibrahim MOUSSA',
-                    email: 'lawyer@barreau.ne',
-                    role: 'lawyer',
-                    active: false
-                }
-            ],
-            formData: {
-                name: '',
-                email: '',
-                role: ''
-            },
-            get filteredUsers() {
-                if (!this.searchTerm) return this.users;
-                return this.users.filter(user => 
-                    user.name.toLowerCase().includes(this.searchTerm.toLowerCase()) ||
-                    user.email.toLowerCase().includes(this.searchTerm.toLowerCase())
-                );
-            },
-            getRoleLabel(role) {
-                const roles = {
-                    'assistant_admin': 'Assistant Administratif',
-                    'secretary': 'Secrétaire de l\'Ordre',
-                    'treasurer': 'Trésorière',
-                    'batonnier': 'Bâtonnier',
-                    'lawyer': 'Avocat'
-                };
-                return roles[role] || role;
-            },
-            createUser() {
-                if (!this.formData.name || !this.formData.email || !this.formData.role) {
-                    this.showToast("Erreur", "Veuillez remplir tous les champs obligatoires", "error");
-                    return;
-                }
-                const newUser = {
-                    id: Date.now().toString(),
-                    name: this.formData.name,
-                    email: this.formData.email,
-                    role: this.formData.role,
-                    active: true
-                };
-                this.users.push(newUser);
-                this.showToast("Succès", "Utilisateur créé avec succès");
-                this.showCreateDialog = false;
-                this.formData = { name: '', email: '', role: '' };
-            },
-            openEditDialog(user) {
-                this.selectedUser = user;
-                this.formData = {
-                    name: user.name,
-                    email: user.email,
-                    role: user.role
-                };
-                this.showEditDialog = true;
-            },
-            editUser() {
-                if (!this.selectedUser || !this.formData.name || !this.formData.email || !this.formData.role) {
-                    this.showToast("Erreur", "Veuillez remplir tous les champs obligatoires", "error");
-                    return;
-                }
-                const userIndex = this.users.findIndex(u => u.id === this.selectedUser.id);
-                if (userIndex !== -1) {
-                    this.users[userIndex] = {
-                        ...this.users[userIndex],
-                        name: this.formData.name,
-                        email: this.formData.email,
-                        role: this.formData.role
-                    };
-                }
-                this.showToast("Succès", "Informations mises à jour avec succès");
-                this.showEditDialog = false;
-                this.selectedUser = null;
-                this.formData = { name: '', email: '', role: '' };
-            },
-            toggleUserStatus(userId) {
-                const userIndex = this.users.findIndex(u => u.id === userId);
-                if (userIndex !== -1) {
-                    this.users[userIndex].active = !this.users[userIndex].active;
-                    this.showToast("Succès", "Statut mis à jour avec succès");
-                }
-            },
-            deleteUser(userId) {
-                if (userId === this.currentUserId) {
-                    this.showToast("Erreur", "Vous ne pouvez pas supprimer votre propre compte", "error");
-                    return;
-                }
-                if (confirm('Êtes-vous sûr de vouloir supprimer cet utilisateur ?')) {
-                    this.users = this.users.filter(u => u.id !== userId);
-                    this.showToast("Succès", "Utilisateur supprimé avec succès");
-                }
-            },
-            logout() {
-                if (confirm('Êtes-vous sûr de vouloir vous déconnecter ?')) {
-                    window.location.href = "{{ url_for('logout') }}";
-                }
-            },
-            showToast(title, description, type = 'success') {
-                const toast = document.createElement('div');
-                toast.className = 'fixed top-4 right-4 bg-card border border-border rounded-lg p-4 shadow-lg z-50';
-                toast.innerHTML = `
-                    <div class="font-medium">${title}</div>
-                    <div class="text-sm text-muted-foreground">${description}</div>
-                `;
-                document.body.appendChild(toast);
-                setTimeout(() => {
-                    toast.remove();
-                }, 3000);
+     // Filtrer les utilisateurs
+    function filterUsers() {
+        const searchTerm = document.getElementById('searchInput').value.toLowerCase();
+        const userItems = document.querySelectorAll('.user-item');
+        userItems.forEach(item => {
+            const name = item.getAttribute('data-name').toLowerCase();
+            const email = item.getAttribute('data-email').toLowerCase();
+            if (name.includes(searchTerm) || email.includes(searchTerm)) {
+                item.style.display = 'block';
+            } else {
+                item.style.display = 'none';
             }
-        }))
-    })
-    document.addEventListener('DOMContentLoaded', function() {
-        lucide.createIcons();
+        });
+    }
+
+    // Ouvrir le modal de modification
+    function openEditModal(id, nom, prenom, email, role, statut, telephone, adresse, dateNaissance) {
+        document.getElementById('editUserId').value = id;
+        document.getElementById('editNom').value = nom;
+        document.getElementById('editPrenom').value = prenom;
+        document.getElementById('editEmail').value = email;
+        document.getElementById('editRole').value = role;
+        document.getElementById('editTelephone').value = telephone;
+        document.getElementById('editAdresse').value = adresse;
+        document.getElementById('editDateNaissance').value = dateNaissance;
+
+        // Afficher/masquer les champs spécifiques aux avocats
+        if (role === 'avocat') {
+            document.getElementById('editAvocatFields').style.display = 'block';
+        } else {
+            document.getElementById('editAvocatFields').style.display = 'none';
+        }
+
+        // Configurer l'action du formulaire
+        const form = document.getElementById('editUserForm');
+        form.action = `/batonnier/utilisateurs/${id}/modifier`;
+
+        // Afficher le modal
+        document.getElementById('editUserModal').classList.remove('hidden');
+    }
+
+    // Afficher/masquer les champs spécifiques aux avocats dans le modal de création
+    document.getElementById('role').addEventListener('change', function() {
+        const avocatFields = document.getElementById('avocatFields');
+        avocatFields.style.display = this.value === 'avocat' ? 'block' : 'none';
+    });
+
+    // Fermer les modals si on clique en dehors
+    document.getElementById('createUserModal').addEventListener('click', function(e) {
+        if (e.target === this) {
+            this.classList.add('hidden');
+        }
+    });
+
+    document.getElementById('editUserModal').addEventListener('click', function(e) {
+        if (e.target === this) {
+            this.classList.add('hidden');
+        }
     });
 </script>
 {% endblock %}

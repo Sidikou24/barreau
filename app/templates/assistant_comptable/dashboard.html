@@ -1,0 +1,16 @@
+{% extends "base.html" %}
+{% block title %}Dashboard Comptable{% endblock %}
+{% block content %}
+<div class="container">
+    <h1>Tableau de bord - Comptable</h1>
+    <p>Bienvenue {{ current_user.nom }} {{ current_user.prenom }} 👋</p>
+
+    <a href="{{ url_for('auth.change_password') }}" class="btn btn-secondary mt-3">
+        Modifier mon mot de passe
+    </a>
+    <a href="{{ url_for('assistant_comptable.fonds') }}" class="btn btn-secondary mt-3">
+        Gestion des fonds
+    </a>
+    <a href="{{ url_for('assistant_comptable.cotisations') }}">💰 Cotisations</a>
+</div>
+{% endblock %}
