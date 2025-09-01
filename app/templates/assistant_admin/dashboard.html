@@ -1,13 +1,54 @@
 {% extends "base.html" %}
 {% block title %}Dashboard Assistant Administratif{% endblock %}
-
 {% block content %}
 <div class="container">
     <h1>Tableau de bord - Assistant Administratif</h1>
     <p>Bienvenue {{ current_user.nom }} {{ current_user.prenom }} 👋</p>
 
-    <a href="{{ url_for('auth.change_password') }}" class="btn btn-primary">
+    <div class="row mt-4">
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h5>Statistiques</h5>
+                </div>
+                <div class="card-body">
+                    <p>Droits en attente : {{ stats.en_attente }}</p>
+                    <p>Droits validés : {{ stats.valide }}</p>
+                    <p>Droits rejetés : {{ stats.rejete }}</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h5>Derniers droits créés</h5>
+                </div>
+                <div class="card-body">
+                    <ul class="list-group">
+                        {% for droit in derniers_droits %}
+                        <li class="list-group-item">
+                            <a href="{{ url_for('assistant_admin.detail_droit', plaidoirie_id=droit.plaidoirie_id) }}">
+                                {{ droit.detail_timbres }} - {{ droit.montant_formate }}
+                            </a>
+                            <span class="badge bg-{{ 'warning' if droit.statut == 'en_attente' else 'success' if droit.statut == 'valide' else 'danger' }}">
+                                {{ droit.statut }}
+                            </span>
+                        </li>
+                        {% endfor %}
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <a href="{{ url_for('assistant_admin.nouveau_droit') }}" class="btn btn-primary mt-3">
+        Créer un nouveau droit
+    </a>
+    <a href="{{ url_for('auth.change_password') }}" class="btn btn-secondary mt-3">
         Modifier mon mot de passe
+    </a>
+    <a href="{{ url_for('assistant_admin.plaidoirie') }}" class="btn btn-secondary mt-3">
+        plaidoirie
     </a>
 </div>
 {% endblock %}

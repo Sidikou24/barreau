@@ -23,7 +23,6 @@ class Avocat(db.Model):
     date_creation = db.Column(db.DateTime, default=datetime.utcnow)
     
     # Relations
-    plaidoiries = db.relationship('DroitPlaidoirie', backref='avocat', lazy=True)
     actes = db.relationship('ActeAvocat', backref='avocat', lazy=True)
     assistances = db.relationship('AssistanceJuridique', backref='avocat', lazy=True)
     cotisations = db.relationship('Cotisation', backref='avocat', lazy=True)
