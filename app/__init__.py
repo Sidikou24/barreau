@@ -43,6 +43,7 @@ def create_app(config_name='default'):
     from app.routes.assistant_admin import assistant_admin_bp
     from app.routes.tresorier import tresorier_bp
     from app.routes.secretaire import secretaire_bp
+    from app.routes.actesAvocat import actes_avocat_bp
     
     app.register_blueprint(auth_bp, url_prefix='/auth')
     app.register_blueprint(batonnier_bp, url_prefix='/batonnier')
@@ -51,6 +52,7 @@ def create_app(config_name='default'):
     app.register_blueprint(assistant_admin_bp, url_prefix='/assistant-admin')
     app.register_blueprint(tresorier_bp, url_prefix='/tresorier')
     app.register_blueprint(secretaire_bp, url_prefix='/secretaire')
+    app.register_blueprint(actes_avocat_bp, url_prefix='/assistant-admin/actes-avocats')
     
     # Route par défaut
     @app.route('/')
@@ -59,7 +61,8 @@ def create_app(config_name='default'):
     
     # Import des modèles pour les migrations
     from app.models import user, avocat, droit_plaidoirie, cabinet_avocat, \
-                          acte_avocat, assistance_juridique, cotisation, \
+                           acte_document, assistance_juridique, 
+                         acte_avocat, cotisation, \
                           formation, fond, operation_fond, sanction_disciplinaire
     
     return app

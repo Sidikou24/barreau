@@ -22,6 +22,6 @@ class ActeAvocat(db.Model):
     
     # Relations
     agent = db.relationship('User', backref='actes_recus')
-    
+
     def __repr__(self):
         return f'<ActeAvocat {self.numero_acte}>'

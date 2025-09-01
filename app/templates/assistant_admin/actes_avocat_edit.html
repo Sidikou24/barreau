@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+{% block title %}Modifier acte{% endblock %}
+{% block content %}
+<div class="container">
+    <h1>Modifier l’acte {{ acte.numero_acte }}</h1>
+    <form method="post" class="card" style="padding:1rem; max-width:480px;">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <div style="margin-bottom: 0.75rem;">
+            <label>Statut</label>
+            <select class="select" name="statut">
+                <option value="recu" {% if acte.statut=='recu' %}selected{% endif %}>En cours de validation</option>
+                <option value="traite" {% if acte.statut=='traite' %}selected{% endif %}>Validé</option>
+                <option value="archive" {% if acte.statut=='archive' %}selected{% endif %}>Archivé</option>
+            </select>
+        </div>
+        <div style="display:flex; gap:10px;">
+            <a href="{{ url_for('actes_avocat.index') }}" class="btn btn-outline">Annuler</a>
+            <button type="submit" class="btn btn-primary">Enregistrer</button>
+        </div>
+    </form>
+</div>
+{% endblock %}

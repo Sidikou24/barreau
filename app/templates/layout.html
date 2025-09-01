@@ -30,13 +30,28 @@
             <div class="p-4">
                 <div class="space-y-1">
                     <p class="text-xs font-medium text-muted-foreground mb-2">Navigation</p>
-                    <a href="{{ url_for('batonnier.dashboard') }}" class="sidebar-menu-item">
-                        <i data-lucide="bar-chart-3" class="h-4 w-4 mr-3"></i> Tableau de bord
-                    </a>
-                    <a href="{{ url_for('batonnier.utilisateurs') }}" class="sidebar-menu-item">
-                        <i data-lucide="users" class="h-4 w-4 mr-3"></i> Gestion des utilisateurs
-                    </a>
-                    <!-- Ajoute ici les autres liens -->
+                    {% if current_user.is_authenticated and current_user.role == 'batonnier' %}
+                        <a href="{{ url_for('batonnier.dashboard') }}" class="sidebar-menu-item">
+                            <i data-lucide="bar-chart-3" class="h-4 w-4 mr-3"></i> Tableau de bord
+                        </a>
+                        <a href="{{ url_for('batonnier.utilisateurs') }}" class="sidebar-menu-item">
+                            <i data-lucide="users" class="h-4 w-4 mr-3"></i> Gestion des utilisateurs
+                        </a>
+                    {% elif current_user.is_authenticated and current_user.role == 'assistant_administratif' %}
+                        <a href="{{ url_for('assistant_admin.dashboard') }}" class="sidebar-menu-item">
+                            <i data-lucide="bar-chart-3" class="h-4 w-4 mr-3"></i> Tableau de bord
+                        </a>
+                        <a href="{{ url_for('assistant_admin.dashboard') }}#actes" class="sidebar-menu-item">
+                            <i data-lucide="file-text" class="h-4 w-4 mr-3"></i> Actes d’avocats
+                        </a>
+                        <a href="{{ url_for('assistant_admin.dashboard') }}#assistance-juridique" class="sidebar-menu-item">
+                            <i data-lucide="life-buoy" class="h-4 w-4 mr-3"></i> Assistance juridique
+                        </a>
+                                            {% else %}
+                        <a href="{{ url_for('auth.change_password') }}" class="sidebar-menu-item">
+                            <i data-lucide="key" class="h-4 w-4 mr-3"></i> Mon mot de passe
+                        </a>
+                    {% endif %}
                 </div>
             </div>
 
@@ -44,11 +59,18 @@
             <div class="absolute bottom-0 w-64 border-t border-sidebar-border p-4">
                 <div class="flex items-center gap-3 mb-3">
                     <div class="avatar h-8 w-8">
-                        <span>B</span>
+                        <span>{{ current_user.nom[0] if current_user.is_authenticated and current_user.nom else 'U' }}</span>
                     </div>
                     <div class="flex-1 text-left text-sm">
-                        <div class="font-medium text-sidebar-foreground">Bâtonnier</div>
-                        <div class="text-xs text-muted-foreground">Chef de l'Ordre</div>
+                        <div class="font-medium text-sidebar-foreground">{{ current_user.nom }} {{ current_user.prenom }}</div>
+                        <div class="text-xs text-muted-foreground">
+                            {% if current_user.role == 'assistant_administratif' %}Assistant Administratif
+                            {% elif current_user.role == 'secretaire' %}Secrétaire de l'Ordre
+                            {% elif current_user.role == 'tresorier' %}Trésorière
+                            {% elif current_user.role == 'batonnier' %}Bâtonnier
+                            {% elif current_user.role == 'avocat' %}Avocat
+                            {% else %}{{ current_user.role|capitalize }}{% endif %}
+                        </div>
                     </div>
                 </div>
                 <a href="{{ url_for('auth.logout') }}" class="btn btn-outline w-full justify-start gap-2">
@@ -59,6 +81,17 @@
 
         <!-- Contenu principal -->
         <div class="flex-1 p-6">
+            {% with messages = get_flashed_messages(with_categories=true) %}
+                {% if messages %}
+                    <div class="mb-4 space-y-2">
+                        {% for category, message in messages %}
+                            <div class="p-3 rounded-md {% if category == 'success' %}bg-green-100 text-green-800{% elif category == 'danger' %}bg-red-100 text-red-800{% elif category == 'warning' %}bg-yellow-100 text-yellow-800{% else %}bg-blue-100 text-blue-800{% endif %}">
+                                {{ message }}
+                            </div>
+                        {% endfor %}
+                    </div>
+                {% endif %}
+            {% endwith %}
             {% block content %}{% endblock %}
         </div>
     </div>

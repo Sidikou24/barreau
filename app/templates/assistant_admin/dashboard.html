@@ -1,11 +1,14 @@
-{% extends "base.html" %}
-{% block title %}Dashboard Assistant Administratif{% endblock %}
-{% block content %}
-<div class="container">
-    <h1>Tableau de bord - Assistant Administratif</h1>
-    <p>Bienvenue {{ current_user.nom }} {{ current_user.prenom }} 👋</p>
 
-    <div class="row mt-4">
+{% extends "layout.html" %}
+{% block title %}Tableau de bord - Assistant Administratif{% endblock %}
+
+
+<!--{% extends "base.html" %}
+{% block title %}Dashboard Assistant Administratif{% endblock %}-->
+
+{% block content %}
+<div class="space-y-6" id="actes">
+   <div class="row mt-4">
         <div class="col-md-6">
             <div class="card">
                 <div class="card-header">
@@ -50,5 +53,423 @@
     <a href="{{ url_for('assistant_admin.plaidoirie') }}" class="btn btn-secondary mt-3">
         plaidoirie
     </a>
+
 </div>
-{% endblock %}
+        <!-- Section Actes d'avocats complète -->
+    <div class="card p-6" id="section-actes">
+        
+        <div class="flex items-center justify-between mb-4">
+            <h2 class="text-lg font-semibold">Actes d’avocats</h2>
+            <button class="btn btn-primary" onclick="document.getElementById('nouvelActeModal').style.display='flex'">
+                <i data-lucide="file-plus" class="h-4 w-4 mr-2"></i> Nouvel acte
+            </button>
+        </div>
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-4">
+            <div class="card p-4"><div class="text-sm text-muted-foreground">Total des actes</div><div class="text-2xl font-bold">{{ total_actes if total_actes is defined else 0 }}</div></div>
+            <div class="card p-4"><div class="text-sm text-muted-foreground">En attente</div><div class="text-2xl font-bold">{{ actes_en_attente if actes_en_attente is defined else 0 }}</div></div>
+            <div class="card p-4"><div class="text-sm text-muted-foreground">Archivés</div><div class="text-2xl font-bold">{{ actes_archives if actes_archives is defined else 0 }}</div></div>
+        </div>
+        <form method="get" action="{{ url_for('assistant_admin.dashboard_actes') }}#actes" class="mb-4 flex gap-2">
+            <input class="input" type="text" name="q" placeholder="Rechercher par numéro d’acte ou nom d’avocat" value="{{ q }}" />
+            <button class="btn btn-outline" type="submit">Rechercher</button>
+        </form>
+        <div class="overflow-x-auto">
+            <table class="w-full">
+                <thead>
+                    <tr class="text-left border-b">
+                        <th class="p-2">Numéro d’acte</th>
+                        <th class="p-2">Nom de l’avocat</th>
+                        <th class="p-2">Date de dépôt</th>
+                        <th class="p-2">Statut</th>
+                        <th class="p-2">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for acte in actes %}
+                    <tr class="border-b">
+                        <td class="p-2">{{ acte.numero_acte }}</td>
+                        <td class="p-2">{{ acte.avocat.nom }}</td>
+                        <td class="p-2">{{ acte.date_depot.strftime('%d/%m/%Y') }}</td>
+                        <td class="p-2">
+                            {% if acte.statut == 'archive' %}
+                                <span class="badge badge-secondary">Archivé</span>
+                            {% elif acte.statut == 'traite' %}
+                                <span class="badge badge-green">Validé</span>
+                            {% else %}
+                                <span class="badge badge-red">En cours de validation</span>
+                            {% endif %}
+                        </td>
+                        <td class="p-2">
+                            <button class="btn btn-outline" onclick="openActeDetails(this)"
+                                data-numero="{{ acte.numero_acte }}"
+                                data-avocat="{{ acte.avocat.nom }}"
+                                data-nature="{{ acte.nature_acte }}"
+                                data-pages="{{ acte.nombre_pages }}"
+                                data-parties="{{ acte.identites_parties|e }}"
+                                data-date-acte="{{ acte.date_acte.strftime('%d/%m/%Y') }}"
+                                data-date-depot="{{ acte.date_depot.strftime('%d/%m/%Y') }}"
+                                data-statut="{{ acte.statut }}"
+                                data-agent="{{ acte.agent.nom }} {{ acte.agent.prenom }}"
+                                data-docs='{{ acte.documents|map(attribute="original_name")|list|tojson }}'
+                            >Détails</button>
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="5" class="p-3 text-center text-muted-foreground">Aucun acte trouvé</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Assistance juridique -->
+    <div class="card p-6" id="assistance-juridique">
+        <div class="flex items-center justify-between mb-4">
+            <h2 class="text-lg font-semibold">Assistance juridique</h2>
+            <button class="btn btn-primary" onclick="document.getElementById('nouvelleAssistanceModal').style.display='flex'">
+                <i data-lucide="plus" class="h-4 w-4 mr-2"></i> Nouvelle demande
+            </button>
+        </div>
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-4">
+            <div class="card p-4"><div class="text-sm text-muted-foreground">Total</div><div class="text-2xl font-bold">{{ total_ass if total_ass is defined else 0 }}</div></div>
+            <div class="card p-4"><div class="text-sm text-muted-foreground">En attente</div><div class="text-2xl font-bold">{{ en_attente_ass if en_attente_ass is defined else 0 }}</div></div>
+            <div class="card p-4"><div class="text-sm text-muted-foreground">Terminées</div><div class="text-2xl font-bold">{{ termine_ass if termine_ass is defined else 0 }}</div></div>
+        </div>
+        <form method="get" action="{{ url_for('assistant_admin.dashboard_actes') }}#assistance-juridique" class="mb-4 flex gap-2">
+            <input class="input" type="text" name="aq" placeholder="Rechercher par numéro ou nom du demandeur" value="{{ aq }}" />
+            <button class="btn btn-outline" type="submit">Rechercher</button>
+        </form>
+        <div class="overflow-x-auto">
+            <table class="w-full">
+                <thead>
+                    <tr class="text-left border-b">
+                        <th class="p-2">Numéro</th>
+                        <th class="p-2">Demandeur</th>
+                        <th class="p-2">Réception</th>
+                        <th class="p-2">Statut</th>
+                        <th class="p-2">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for a in assistances %}
+                    <tr class="border-b">
+                        <td class="p-2">{{ a.numero_demande }}</td>
+                        <td class="p-2">{{ a.nom_demandeur }}</td>
+                        <td class="p-2">{{ a.date_reception_demande.strftime('%d/%m/%Y') }}</td>
+                        <td class="p-2">
+                            {% if a.statut == 'annule' %}
+                                <span class="badge badge-secondary">Annulée</span>
+                            {% elif a.statut == 'termine' %}
+                                <span class="badge badge-green">Terminée</span>
+                            {% else %}
+                                <span class="badge badge-red">En cours</span>
+                            {% endif %}
+                        </td>
+                        <td class="p-2">
+                            <button class="btn btn-outline" onclick="openAssistanceDetails(this)"
+                                data-numero="{{ a.numero_demande }}"
+                                data-demandeur="{{ a.nom_demandeur }}"
+                                data-nature="{{ a.nature_demande }}"
+                                data-date-reception="{{ a.date_reception_demande.strftime('%d/%m/%Y') }}"
+                                data-date-demande="{{ a.date_demande.strftime('%d/%m/%Y') }}"
+                                data-statut="{{ a.statut }}"
+                                data-agent="{{ a.agent.nom }} {{ a.agent.prenom }}"
+                                data-avocat="{{ a.avocat.nom if a.avocat else '' }}"
+                                data-montant="{{ a.montant_alloue if a.montant_alloue else '' }}"
+                                data-commentaire="{{ a.commentaire|default('', true)|e }}"
+                                >Détails</button>
+                            <form method="post" action="{{ url_for('assistant_admin.assistance_annuler', assistance_id=a.assistance_id) }}" class="inline" onsubmit="return confirm('Annuler cette demande ?')">
+                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                <button type="submit" class="btn btn-outline" {% if a.statut in ['termine','annule'] %}disabled style="opacity:.5; cursor:not-allowed;"{% endif %}>Annuler</button>
+                            </form>
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="5" class="p-3 text-center text-muted-foreground">Aucune demande</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Modale Nouvelle demande Assistance -->
+    <div id="nouvelleAssistanceModal" class="modal" style="display:none;" onclick="if(event.target===this)this.style.display='none'">
+        <div class="modal-content" style="max-width: 900px; width: 95%;">
+            <h3 class="text-lg leading-6 font-medium mb-2">Nouvelle demande d'assistance</h3>
+            <form method="post" action="{{ url_for('assistant_admin.assistance_nouvelle') }}">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <input type="hidden" name="numero_demande" value="" />
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-2">
+                    <div>
+                        <label>Nom du demandeur</label>
+                        <input class="input" type="text" name="nom_demandeur" required />
+                    </div>
+                    <div>
+                        <label>Nature de la demande</label>
+                        <input class="input" type="text" name="nature_demande" required />
+                    </div>
+                    <div>
+                        <label>Date de réception</label>
+                        <input class="input" type="datetime-local" name="date_reception" required />
+                    </div>
+                    <div>
+                        <label>Date de la demande</label>
+                        <input class="input" type="datetime-local" name="date_demande" required />
+                    </div>
+                    <div>
+                        <label>Avocat (optionnel)</label>
+                        <select class="select" name="ass_avocat_nom">
+                            <option value="">-- Aucun --</option>
+                            {% for a in avocats %}
+                            <option value="{{ a.nom }}">{{ a.nom }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div>
+                        <label>Montant alloué (optionnel)</label>
+                        <input class="input" type="number" name="montant_alloue" step="0.01" min="0" />
+                    </div>
+                </div>
+                <div style="display:flex; gap:10px; justify-content:flex-end; margin-top:1rem;">
+                    <button type="button" class="btn btn-outline" onclick="document.getElementById('nouvelleAssistanceModal').style.display='none'">Annuler</button>
+                    <button type="submit" class="btn btn-primary">Créer</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modale Détails Assistance -->
+    <div id="detailAssistanceModal" class="modal" style="display:none;" onclick="if(event.target===this)this.style.display='none'">
+        <div class="modal-content" style="max-width:640px;">
+            <div class="flex items-center justify-between mb-3">
+                <h3 class="text-lg font-semibold">Détails de la demande</h3>
+                <button class="btn btn-ghost" onclick="document.getElementById('detailAssistanceModal').style.display='none'">Fermer</button>
+            </div>
+            <div class="space-y-2">
+                <div><b>Numéro:</b> <span id="adNumero"></span></div>
+                <div><b>Demandeur:</b> <span id="adDemandeur"></span></div>
+                <div><b>Nature:</b> <span id="adNature"></span></div>
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                    <div><b>Date réception:</b> <span id="adReco"></span></div>
+                    <div><b>Date demande:</b> <span id="adDem"></span></div>
+                </div>
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                    <div><b>Statut:</b> <span id="adStatut"></span></div>
+                    <div><b>Agent:</b> <span id="adAgent"></span></div>
+                </div>
+                <div><b>Avocat:</b> <span id="adAvocat"></span></div>
+                <div><b>Montant alloué:</b> <span id="adMontant"></span></div>
+                <div><b>Commentaire:</b> <div id="adCommentaire" class="whitespace-pre-wrap"></div></div>
+            </div>
+            <div class="flex justify-end gap-2 mt-4">
+                <button class="btn btn-outline" onclick="document.getElementById('detailAssistanceModal').style.display='none'">Fermer</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+    function openAssistanceDetails(btn){
+        const m = document.getElementById('detailAssistanceModal');
+        document.getElementById('adNumero').innerText = btn.dataset.numero || '';
+        document.getElementById('adDemandeur').innerText = btn.dataset.demandeur || '';
+        document.getElementById('adNature').innerText = btn.dataset.nature || '';
+        document.getElementById('adReco').innerText = btn.dataset.dateReception || '';
+        document.getElementById('adDem').innerText = btn.dataset.dateDemande || '';
+        document.getElementById('adStatut').innerText = btn.dataset.statut || '';
+        document.getElementById('adAgent').innerText = btn.dataset.agent || '';
+        document.getElementById('adAvocat').innerText = btn.dataset.avocat || '';
+        document.getElementById('adMontant').innerText = btn.dataset.montant || '';
+        document.getElementById('adCommentaire').innerText = btn.dataset.commentaire || '';
+        m.style.display = 'flex';
+    }
+    </script>
+
+    <!-- Liens utiles -->
+    <div class="card p-6">
+        <h2 class="text-lg font-semibold mb-4">Liens utiles</h2>
+        <div class="flex flex-wrap gap-2">
+            <a href="{{ url_for('auth.change_password') }}" class="btn btn-outline">
+                <i data-lucide="key" class="h-4 w-4 mr-2"></i> Modifier mon mot de passe
+            </a>
+        </div>
+    </div>
+<!-- Modal Nouvel acte (réutilisé) -->
+<div id="nouvelActeModal" class="modal" style="display:none;" onclick="if(event.target===this)this.style.display='none'">
+    <div class="modal-content" style="max-width: 900px; width: 95%;">
+        <h3 class="text-lg leading-6 font-medium mb-2">Enregistrer un nouvel acte</h3>
+        <form method="post" action="{{ url_for('actes_avocat.create') }}" enctype="multipart/form-data">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <!-- Numéro d'acte caché : généré côté serveur si vide -->
+            <input type="hidden" name="numero_acte" value="" />
+            <div style="display:flex; flex-direction:column; gap:10px;">
+                <input type="hidden" name="statut" value="recu" />
+                <input type="hidden" name="agent_reception" value="{{ current_user.id }}" />
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-2">
+                    <div>
+                        <label>Avocat</label>
+                        <select class="select" name="avocat_nom" required>
+                            <option value="">-- Sélectionner un avocat --</option>
+                            {% for a in avocats %}
+                            <option value="{{ a.nom }}">{{ a.nom }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div>
+                        <label>Nature de l’acte</label>
+                        <input class="input" type="text" name="nature_acte" placeholder="Ex: Acte de procédure" required />
+                    </div>
+                    <div>
+                        <label>Nombre de pages</label>
+                        <input class="input" type="number" name="nombre_pages" min="1" step="1" required />
+                    </div>
+                </div>
+                <div>
+                    <label>Identités des parties</label>
+                    <div id="partiesContainer" class="space-y-2">
+                        <div class="flex gap-2">
+                            <input class="input flex-1" type="text" name="identites_parties[]" placeholder="Ex: NOM Prénom, Adresse" />
+                            <button type="button" class="btn btn-outline" onclick="addPartie()">+</button>
+                        </div>
+                    </div>
+                    <small class="text-muted-foreground">Ajoutez une ou plusieurs identités. Au moins une est requise.</small>
+                </div>
+                <div>
+                    <label>Date de création</label>
+                    <input class="input" type="datetime-local" name="date_creation" />
+                </div>
+                <div>
+                    <label>Documents scannés (PDF/Image) - multiples</label>
+                    <input class="input" type="file" name="documents" accept=".pdf,.png,.jpg,.jpeg" multiple />
+                </div>
+            </div>
+            <div style="display:flex; gap:10px; justify-content:flex-end; margin-top:1rem;">
+                <button type="button" class="btn btn-outline" onclick="document.getElementById('nouvelActeModal').style.display='none'">Annuler</button>
+                <button type="submit" class="btn btn-primary">Enregistrer l’acte</button>
+            </div>
+            <script>
+                function addPartie(){
+                    const cont = document.getElementById('partiesContainer');
+                    const row = document.createElement('div');
+                    row.className = 'flex gap-2';
+                    row.innerHTML = `<input class="input flex-1" type="text" name="identites_parties[]" placeholder="Ex: NOM Prénom, Adresse" />
+                                     <button type="button" class="btn btn-outline" onclick="this.parentElement.remove()">-</button>`;
+                    cont.appendChild(row);
+                }
+                // Validation minimale: au moins une identité non vide
+                document.currentScript.closest('form').addEventListener('submit', function(e){
+                    const values = Array.from(this.querySelectorAll('input[name="identites_parties[]"]'))
+                        .map(i => i.value.trim())
+                        .filter(v => v.length > 0);
+                    if (values.length === 0){
+                        e.preventDefault();
+                        alert('Veuillez saisir au moins une identité de partie.');
+                    }
+                });
+                // Fermer le modal avec Escape
+                document.addEventListener('keydown', function(e){
+                    if (e.key === 'Escape') {
+                        const modal = document.getElementById('nouvelActeModal');
+                        if (modal && modal.style.display === 'flex') modal.style.display = 'none';
+                    }
+                });
+            </script>
+        </form>
+    </div>
+</div>
+<!-- Modal Détails Acte -->
+<div id="detailActeModal" class="modal" style="display:none;" onclick="if(event.target===this)this.style.display='none'">
+    <div class="modal-content" style="max-width:640px;">
+        <div class="flex items-center justify-between mb-3">
+            <h3 class="text-lg font-semibold">Détails de l’acte</h3>
+            <button class="btn btn-ghost" onclick="document.getElementById('detailActeModal').style.display='none'">Fermer</button>
+        </div>
+        <div class="space-y-2">
+            <div><b>Numéro:</b> <span id="detNumero"></span></div>
+            <div><b>Avocat:</b> <span id="detAvocat"></span></div>
+            <div><b>Nature:</b> <span id="detNature"></span></div>
+            <div><b>Nombre de pages:</b> <span id="detPages"></span></div>
+            <div><b>Identités des parties:</b> <div id="detParties" class="whitespace-pre-wrap"></div></div>
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                <div><b>Date de l’acte:</b> <span id="detDateActe"></span></div>
+                <div><b>Date de dépôt:</b> <span id="detDateDepot"></span></div>
+            </div>
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                <div><b>Statut:</b> <span id="detStatut"></span></div>
+                <div><b>Agent de réception:</b> <span id="detAgent"></span></div>
+            </div>
+            <div>
+                <b>Documents:</b>
+                <ul id="detDocs" class="list-disc pl-5 text-sm text-muted-foreground"></ul>
+            </div>
+        </div>
+        <div class="flex justify-end gap-2 mt-4">
+            <button class="btn btn-outline" onclick="document.getElementById('detailActeModal').style.display='none'">Fermer</button>
+        </div>
+    </div>
+</div>
+<script>
+function openActeDetails(btn){
+    const m = document.getElementById('detailActeModal');
+    document.getElementById('detNumero').innerText = btn.dataset.numero || '';
+    document.getElementById('detAvocat').innerText = btn.dataset.avocat || '';
+    document.getElementById('detNature').innerText = btn.dataset.nature || '';
+    document.getElementById('detPages').innerText = btn.dataset.pages || '';
+    document.getElementById('detParties').innerText = btn.dataset.parties || '';
+    document.getElementById('detDateActe').innerText = btn.dataset.dateActe || '';
+    document.getElementById('detDateDepot').innerText = btn.dataset.dateDepot || '';
+    document.getElementById('detStatut').innerText = btn.dataset.statut || '';
+    document.getElementById('detAgent').innerText = btn.dataset.agent || '';
+    const docsEl = document.getElementById('detDocs');
+    docsEl.innerHTML = '';
+    try {
+        const docs = JSON.parse(btn.dataset.docs || '[]');
+        if (Array.isArray(docs) && docs.length){
+            docs.forEach(n => {
+                const li = document.createElement('li');
+                li.textContent = n;
+                docsEl.appendChild(li);
+            });
+        } else {
+            const li = document.createElement('li');
+            li.textContent = 'Aucun document';
+            docsEl.appendChild(li);
+        }
+    } catch(e){
+        const li = document.createElement('li');
+        li.textContent = 'Aucun document';
+        docsEl.appendChild(li);
+    }
+    m.style.display = 'flex';
+}
+// Fermer avec Escape
+document.addEventListener('keydown', function(e){
+    if (e.key === 'Escape'){
+        const dm = document.getElementById('detailActeModal');
+        if (dm && dm.style.display === 'flex') dm.style.display = 'none';
+    }
+});
+</script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  function toggleSections() {
+    var hash = window.location.hash || '#actes';
+    var acts = document.getElementById('section-actes');
+    var assistance = document.getElementById('assistance-juridique');
+    if (!acts || !assistance) return;
+    if (hash === '#assistance-juridique') {
+      acts.style.display = 'none';
+      assistance.style.display = 'block';
+    } else {
+      acts.style.display = 'block';
+      assistance.style.display = 'none';
+    }
+  }
+  toggleSections();
+  window.addEventListener('hashchange', toggleSections);
+});
+</script>
+   

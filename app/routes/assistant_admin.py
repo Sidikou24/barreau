@@ -4,6 +4,13 @@ from flask_login import login_required, current_user
 from app.utils.decorators import role_required
 from app.services.droit_plaidoirie import DroitPlaidoirieService
 from app.models.droit_plaidoirie import DroitPlaidoirie
+from app.models import db
+from app.models.acte_avocat import ActeAvocat
+from app.models.avocat import Avocat
+from app.models.assistance_juridique import AssistanceJuridique
+from sqlalchemy import or_, func
+from datetime import datetime
+
 
 assistant_admin_bp = Blueprint('assistant_admin', __name__)
 
@@ -17,15 +24,141 @@ def plaidoirie():
 @login_required
 @role_required('assistant_administratif')
 def dashboard():
-    # Récupération des statistiques
+
+    # Redirige vers la section actes du dashboard sans changer de page
+    return redirect(url_for('assistant_admin.dashboard_actes'))
+
+@assistant_admin_bp.route('/dashboard/actes')
+@login_required
+@role_required('assistant_administratif')
+def dashboard_actes():
+    # Recherche actes
+    q = request.args.get('q', '').strip()
+    query = ActeAvocat.query.join(Avocat)
+    if q:
+        like = f"%{q}%"
+        query = query.filter(or_(ActeAvocat.numero_acte.ilike(like), Avocat.nom.ilike(like)))
+    actes = query.order_by(ActeAvocat.date_depot.desc()).all()
+
+    # Statistiques actes
+    total_actes = ActeAvocat.query.count()
+    actes_en_attente = ActeAvocat.query.filter_by(statut='recu').count()
+    actes_archives = ActeAvocat.query.filter_by(statut='archive').count()
+
+    # Recherche assistance
+    aq = request.args.get('aq', '').strip()
+    aquery = AssistanceJuridique.query
+    if aq:
+        alike = f"%{aq}%"
+        aquery = aquery.filter(or_(AssistanceJuridique.numero_demande.ilike(alike), AssistanceJuridique.nom_demandeur.ilike(alike)))
+    assistances = aquery.order_by(AssistanceJuridique.date_reception_demande.desc()).all()
+
+    # Statistiques assistance
+    total_ass = AssistanceJuridique.query.count()
+    en_attente_ass = AssistanceJuridique.query.filter_by(statut='en_attente').count()
+    termine_ass = AssistanceJuridique.query.filter_by(statut='termine').count()
+    annule_ass = AssistanceJuridique.query.filter_by(statut='annule').count()
+
+    # Avocats pour les formulaires
+    avocats = Avocat.query.filter_by(statut='actif').order_by(Avocat.nom.asc()).all()
+    
+    # Récupération des statistiques droit de plaidoirie
     stats = DroitPlaidoirieService.get_statistiques_agent(current_user.id)
     
-    # Derniers droits créés
+    # Derniers droits de plaidoirie créés
     derniers_droits = DroitPlaidoirieService.get_droits_par_statut(agent_id=current_user.id)[:5]
-    
-    return render_template('assistant_admin/dashboard.html', 
-                         stats=stats, 
+
+    return render_template('assistant_admin/dashboard.html',
+                           actes=actes,
+                           total_actes=total_actes,
+                           actes_en_attente=actes_en_attente,
+                           actes_archives=actes_archives,
+                           q=q,
+                           assistances=assistances,
+                           total_ass=total_ass,
+                           en_attente_ass=en_attente_ass,
+                           termine_ass=termine_ass,
+                           annule_ass=annule_ass,
+                           aq=aq,
+                           avocats=avocats,
+                          stats=stats, 
                          derniers_droits=derniers_droits)
+
+def _generate_numero_demande():
+    now = datetime.now()
+    year = now.year
+    count_year = AssistanceJuridique.query.filter(func.extract('year', AssistanceJuridique.date_reception_demande) == year).count()
+    return f"AJ-{year}-{count_year + 1:03d}"
+
+@assistant_admin_bp.route('/assistance/nouvelle', methods=['POST'])
+@login_required
+@role_required('assistant_administratif')
+def assistance_nouvelle():
+    try:
+        numero = request.form.get('numero_demande') or _generate_numero_demande()
+        nom_demandeur = request.form.get('nom_demandeur', '').strip()
+        nature_demande = request.form.get('nature_demande', '').strip()
+        date_reception = request.form.get('date_reception')
+        date_demande = request.form.get('date_demande')
+        avocat_nom = request.form.get('ass_avocat_nom', '').strip()
+        montant_alloue = request.form.get('montant_alloue')
+        if not nom_demandeur:
+            raise ValueError('Veuillez saisir le nom du demandeur')
+        if not nature_demande:
+            raise ValueError('Veuillez saisir la nature de la demande')
+        if not date_reception or not date_demande:
+            raise ValueError('Veuillez saisir les dates de réception et de demande')
+
+        av_id = None
+        if avocat_nom:
+            av = Avocat.query.filter_by(nom=avocat_nom).first()
+            if not av:
+                raise ValueError("Avocat introuvable pour l'assistance")
+            av_id = av.avocat_id
+
+        # parse dates
+        d_recep = datetime.fromisoformat(date_reception).date()
+        d_dem = datetime.fromisoformat(date_demande).date()
+
+        ass = AssistanceJuridique(
+            date_reception_demande=d_recep,
+            date_demande=d_dem,
+            numero_demande=numero,
+            nature_demande=nature_demande,
+            nom_demandeur=nom_demandeur,
+            agent_reception=current_user.id,
+            avocat_id=av_id,
+            montant_alloue=montant_alloue or None,
+            statut='en_attente'
+        )
+        db.session.add(ass)
+        db.session.commit()
+        flash('Demande d\'assistance créée', 'success')
+    except Exception as e:
+        db.session.rollback()
+        flash(f"Erreur: {str(e)}", 'danger')
+    return redirect(url_for('assistant_admin.dashboard') + '#assistance-juridique')
+
+@assistant_admin_bp.route('/assistance/<int:assistance_id>/annuler', methods=['POST'])
+@login_required
+@role_required('assistant_administratif')
+def assistance_annuler(assistance_id):
+    ass = AssistanceJuridique.query.get_or_404(assistance_id)
+    try:
+        if ass.statut == 'termine':
+            flash('Impossible d\'annuler une demande terminée.', 'warning')
+        elif ass.statut == 'annule':
+            flash('Demande déjà annulée.', 'info')
+        else:
+            ass.statut = 'annule'
+            db.session.commit()
+            flash('Demande annulée.', 'success')
+    except Exception as e:
+        db.session.rollback()
+        flash(f"Erreur: {str(e)}", 'danger')
+    return redirect(url_for('assistant_admin.dashboard') + '#assistance-juridique')
+
+                         )
 
 @assistant_admin_bp.route('/detail-droit/<int:plaidoirie_id>')
 @login_required
@@ -40,6 +173,7 @@ def detail_droit(plaidoirie_id):
         return redirect(url_for('assistant_admin.droit_plaidoirie'))
 
     return render_template('assistant_admin/detail_droit.html', droit=droit)
+
 
 @assistant_admin_bp.route('/droit-plaidoirie')
 @login_required

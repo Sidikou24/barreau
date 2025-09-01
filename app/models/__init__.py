@@ -1,7 +1,3 @@
 # app/models/__init__.py
-from flask_sqlalchemy import SQLAlchemy
-from flask_login import UserMixin
-from datetime import datetime
-from werkzeug.security import generate_password_hash, check_password_hash
-
-db = SQLAlchemy()
+# Réexporte l'instance db correctement initialisée dans app/__init__.py
+from app import db

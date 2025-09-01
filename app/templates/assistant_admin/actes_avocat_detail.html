@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+{% block title %}Détail acte{% endblock %}
+{% block content %}
+<div class="container">
+    <h1>Détail de l’acte {{ acte.numero_acte }}</h1>
+    <div class="card" style="padding:1rem;">
+        <p><b>Numéro d’acte:</b> {{ acte.numero_acte }}</p>
+        <p><b>Avocat:</b> {{ acte.avocat.nom }}</p>
+        <p><b>Nature:</b> {{ acte.nature_acte }}</p>
+        <p><b>Nombre de pages:</b> {{ acte.nombre_pages }}</p>
+        <p><b>Identités des parties:</b> {{ acte.identites_parties }}</p>
+        <p><b>Date d’acte:</b> {{ acte.date_acte.strftime('%d/%m/%Y') }}</p>
+        <p><b>Date de dépôt:</b> {{ acte.date_depot.strftime('%d/%m/%Y') }}</p>
+        <p><b>Statut:</b> {{ acte.statut }}</p>
+
+        <hr style="margin:1rem 0;" />
+        <h3>Documents</h3>
+        {% if acte.documents %}
+            <ul>
+                {% for d in acte.documents %}
+                    <li>
+                        <a href="{{ url_for('actes_avocat.serve_file', filename=d.storage_path.split('uploads/actes/')[-1]) }}" target="_blank" rel="noopener noreferrer">
+                            {{ d.original_name }} ({{ (d.size_bytes or 0) // 1024 }} Ko)
+                        </a>
+                    </li>
+                {% endfor %}
+            </ul>
+        {% else %}
+            <p class="text-muted-foreground">Aucun document.</p>
+        {% endif %}
+
+        <a class="btn btn-outline" href="{{ url_for('actes_avocat.index') }}">Retour</a>
+    </div>
+</div>
+{% endblock %}

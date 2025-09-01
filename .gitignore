@@ -13,7 +13,7 @@ ENV/
 .env.production.local
 
 # Fichiers de cache Python
-__pycache__/
+_pycache_/
 *.py[cod]
 *$py.class
 *.so
@@ -106,3 +106,4 @@ _site/
 
 # Exemple : Ignorer uniquement les fichiers SQL de dump (pas les migrations)
 data/dump.sql
+
