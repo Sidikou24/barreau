@@ -106,3 +106,4 @@ _site/
 
 # Exemple : Ignorer uniquement les fichiers SQL de dump (pas les migrations)
 data/dump.sql
+

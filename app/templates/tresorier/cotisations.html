@@ -1,0 +1,316 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="csrf-token" content="{{ csrf_token() }}">
+
+    <title>Gestion des Cotisations - Trésorier</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .header {
+            display: flex;
+            justify-content: between;
+            align-items: center;
+            margin-bottom: 30px;
+            border-bottom: 2px solid #007bff;
+            padding-bottom: 15px;
+        }
+        .btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 14px;
+            margin: 5px;
+        }
+        .btn-primary { background-color: #007bff; color: white; }
+        .btn-success { background-color: #28a745; color: white; }
+        .btn-info { background-color: #17a2b8; color: white; }
+        .btn:hover { opacity: 0.8; }
+        
+        .cotisations-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+            margin-top: 20px;
+        }
+        .cotisation-card {
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            padding: 20px;
+            background: #fafafa;
+        }
+        .cotisation-year {
+            font-size: 24px;
+            font-weight: bold;
+            color: #007bff;
+            margin-bottom: 10px;
+        }
+        .cotisation-stats {
+            font-size: 14px;
+            color: #666;
+            line-height: 1.5;
+        }
+        .stat-row {
+            display: flex;
+            justify-content: space-between;
+            margin: 5px 0;
+        }
+        
+        /* Modal styles */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.5);
+        }
+        .modal-content {
+            background-color: white;
+            margin: 10% auto;
+            padding: 20px;
+            border-radius: 8px;
+            width: 500px;
+            max-width: 90%;
+        }
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid #ddd;
+            padding-bottom: 10px;
+            margin-bottom: 20px;
+        }
+        .close {
+            font-size: 24px;
+            cursor: pointer;
+            color: #999;
+        }
+        .close:hover { color: #000; }
+        
+        .form-group {
+            margin-bottom: 15px;
+        }
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+        .form-group input, .form-group select {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            box-sizing: border-box;
+        }
+        
+        .alert {
+            padding: 15px;
+            margin: 10px 0;
+            border-radius: 4px;
+        }
+        .alert-success {
+            background-color: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        .alert-danger {
+            background-color: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            color: #666;
+        }
+        .empty-state h3 { margin-bottom: 10px; }
+        .empty-state p { margin-bottom: 20px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>Gestion des Cotisations</h1>
+            <button class="btn btn-primary" onclick="openLancerCotisationModal()">
+                🚀 Lancer une Cotisation
+            </button>
+        </div>
+        
+        <!-- Messages flash -->
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div class="alert alert-{{ 'success' if category == 'success' else 'danger' }}">
+                        {{ message }}
+                    </div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+        
+        {% if cotisations %}
+            <div class="cotisations-grid">
+                {% for cotisation in cotisations %}
+                <div class="cotisation-card">
+                    <div class="cotisation-year">{{ cotisation.annee }}</div>
+                    <div class="cotisation-stats">
+                        <div class="stat-row">
+                            <span>Total avocats :</span>
+                            <strong>{{ cotisation.total_avocats }}</strong>
+                        </div>
+                        <div class="stat-row">
+                            <span>Montant total :</span>
+                            <strong>{{ (cotisation.montant_total) }} FCFA</strong>
+                        </div>
+                        <div class="stat-row">
+                            <span>Payés :</span>
+                            <strong style="color: green;">{{ cotisation.payes }}</strong>
+                        </div>
+                        <div class="stat-row">
+                            <span>Impayés :</span>
+                            <strong style="color: red;">{{ cotisation.impayes }}</strong>
+                        </div>
+                    </div>
+                    <div style="margin-top: 15px;">
+                        <button class="btn btn-info" onclick="voirDetails({{ cotisation.annee }})">
+                            👁️ Voir Détails
+                        </button>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        {% else %}
+            <div class="empty-state">
+                <h3>Aucune cotisation lancée</h3>
+                <p>Vous n'avez encore lancé aucune campagne de cotisation.</p>
+                <button class="btn btn-primary" onclick="openLancerCotisationModal()">
+                    🚀 Lancer votre première cotisation
+                </button>
+            </div>
+        {% endif %}
+    </div>
+    
+    <!-- Modal Lancer Cotisation -->
+    <div id="lancerCotisationModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>🚀 Lancer une Nouvelle Cotisation</h3>
+                <span class="close" onclick="closeLancerCotisationModal()">&times;</span>
+            </div>
+            <form id="lancerCotisationForm">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <div class="form-group">
+                    <label for="annee">Année de cotisation :</label>
+                    <input type="number" id="annee" name="annee" value="{{ annee_courante }}" min="2020" max="2030" required>
+                </div>
+                <div class="form-group">
+                    <label for="montant_stagiaire">Montant pour les stagiaires (FCFA) :</label>
+                    <input type="number" id="montant_stagiaire" name="montant_stagiaire" value="20000" min="1000" step="1000" required>
+                </div>
+                <div class="form-group">
+                    <label for="montant_titulaire">Montant pour les titulaires (FCFA) :</label>
+                    <input type="number" id="montant_titulaire" name="montant_titulaire" value="100000" min="1000" step="1000" required>
+                </div>
+                <div class="form-group">
+                    <label for="d_echeance">Date d'échéance :</label>
+                    <input type="date" id="d_echeance" name="d_echeance" required>
+                </div>
+                <div style="text-align: right; margin-top: 20px;">
+                    <button type="button" class="btn" onclick="closeLancerCotisationModal()">Annuler</button>
+                    <button type="submit" class="btn btn-success">🚀 Lancer la Cotisation</button>
+                </div>
+            </form>
+        </div>
+    </div>
+    
+    <script>
+        // Définir la date d'échéance par défaut (3 mois à partir de maintenant)
+        document.addEventListener('DOMContentLoaded', function() {
+            const today = new Date();
+            const futureDate = new Date(today.getTime() + (90 * 24 * 60 * 60 * 1000));
+            document.getElementById('d_echeance').value = futureDate.toISOString().split('T')[0];
+        });
+        
+        function openLancerCotisationModal() {
+            document.getElementById('lancerCotisationModal').style.display = 'block';
+        }
+        
+        function closeLancerCotisationModal() {
+            document.getElementById('lancerCotisationModal').style.display = 'none';
+        }
+        
+        function voirDetails(annee) {
+            window.location.href = `/tresorier/cotisations/${annee}`;
+        }
+        
+        // Gestion de la soumission du formulaire
+        document.getElementById('lancerCotisationForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const formData = new FormData(this);
+            const data = {
+                annee: formData.get('annee'),
+                montant_stagiaire: formData.get('montant_stagiaire'),
+                montant_titulaire: formData.get('montant_titulaire'),
+                d_echeance: formData.get('d_echeance')
+            };
+            
+            // Afficher un loader
+            const submitBtn = this.querySelector('button[type="submit"]');
+            const originalText = submitBtn.innerHTML;
+            submitBtn.innerHTML = '⏳ En cours...';
+            submitBtn.disabled = true;
+            
+            fetch('/tresorier/lancer-cotisation', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': document.querySelector('meta[name="csrf-token"]').content,
+                },
+                body: JSON.stringify(data)
+            })
+            .then(response => response.json())
+            .then(result => {
+                if (result.success) {
+                    alert('✅ ' + result.message);
+                    location.reload();
+                } else {
+                    alert('❌ ' + result.error);
+                }
+            })
+            .catch(error => {
+                alert('❌ Erreur de connexion : ' + error);
+            })
+            .finally(() => {
+                submitBtn.innerHTML = originalText;
+                submitBtn.disabled = false;
+            });
+        });
+        
+        // Fermer le modal en cliquant à l'extérieur
+        window.onclick = function(event) {
+            const modal = document.getElementById('lancerCotisationModal');
+            if (event.target === modal) {
+                closeLancerCotisationModal();
+            }
+        };
+    </script>
+</body>
+</html>

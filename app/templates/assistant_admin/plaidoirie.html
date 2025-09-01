@@ -1,0 +1,245 @@
+{% extends "layout.html" %}
+
+{% block title %}Droit de plaidoirie - Barreau du Niger{% endblock %}
+
+{% block content %}
+<div x-data="plaidoirie" class="space-y-6">
+    <div class="flex items-center justify-between">
+        <div>
+            <h1 class="text-3xl font-bold text-foreground flex items-center gap-2">
+                <i data-lucide="scale" class="h-8 w-8"></i>
+                Droit de plaidoirie
+            </h1>
+            <p class="text-muted-foreground">
+                Gestion des paiements de droit de plaidoirie
+            </p>
+        </div>
+    </div>
+
+    <!-- Stats -->
+    <div class="grid gap-6 md:grid-cols-3">
+        <div class="card p-6">
+            <div class="flex flex-row items-center justify-between space-y-0 pb-2">
+                <h3 class="text-sm font-medium">En attente</h3>
+                <i data-lucide="clock" class="h-4 w-4 text-muted-foreground"></i>
+            </div>
+            <div>
+                <div class="text-2xl font-bold" x-text="pendingTotal.toLocaleString() + ' FCFA'"></div>
+                <p class="text-xs text-muted-foreground" x-text="pendingCount + ' demandes'"></p>
+            </div>
+        </div>
+        <div class="card p-6">
+            <div class="flex flex-row items-center justify-between space-y-0 pb-2">
+                <h3 class="text-sm font-medium">Validés</h3>
+                <i data-lucide="check" class="h-4 w-4 text-muted-foreground"></i>
+            </div>
+            <div>
+                <div class="text-2xl font-bold" x-text="approvedTotal.toLocaleString() + ' FCFA'"></div>
+                <p class="text-xs text-muted-foreground" x-text="approvedCount + ' paiements'"></p>
+            </div>
+        </div>
+        <div class="card p-6">
+            <div class="flex flex-row items-center justify-between space-y-0 pb-2">
+                <h3 class="text-sm font-medium">Total du mois</h3>
+                <i data-lucide="dollar-sign" class="h-4 w-4 text-muted-foreground"></i>
+            </div>
+            <div>
+                <div class="text-2xl font-bold" x-text="(pendingTotal + approvedTotal).toLocaleString() + ' FCFA'"></div>
+                <p class="text-xs text-muted-foreground">+12% par rapport au mois dernier</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Tabs -->
+    <div class="card">
+        <div class="p-6 pb-0">
+            <div class="flex space-x-1 p-1 bg-muted rounded-lg">
+                <button class="tab-button" :class="{ 'active': activeTab === 'list' }" @click="activeTab = 'list'">Liste des paiements</button>
+                <button class="tab-button" :class="{ 'active': activeTab === 'new' }" @click="activeTab = 'new'" x-show="userRole === 'assistant_admin'">Nouveau paiement</button>
+            </div>
+        </div>
+        <!-- Liste des paiements -->
+        <div x-show="activeTab === 'list'" class="p-6">
+            <div class="space-y-4">
+                <div>
+                    <h3 class="text-lg font-semibold">Demandes de paiement</h3>
+                    <p class="text-sm text-muted-foreground">Liste des demandes de droit de plaidoirie</p>
+                </div>
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>Avocat</th>
+                            <th>Numéro d'affaire</th>
+                            <th>Montant</th>
+                            <th>Date</th>
+                            <th>Statut</th>
+                            <th x-show="userRole === 'treasurer'">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <template x-for="payment in paymentRequests" :key="payment.id">
+                            <tr>
+                                <td>
+                                    <div>
+                                        <div class="font-medium" x-text="payment.lawyerName"></div>
+                                        <div class="text-sm text-muted-foreground" x-text="payment.lawyerId"></div>
+                                    </div>
+                                </td>
+                                <td x-text="payment.caseNumber"></td>
+                                <td x-text="payment.amount.toLocaleString() + ' FCFA'"></td>
+                                <td x-text="new Date(payment.date).toLocaleDateString('fr-FR')"></td>
+                                <td>
+                                    <span class="badge" :class="{ 'badge-secondary': payment.status === 'pending', 'badge-primary': payment.status === 'approved' }" x-text="getStatusText(payment.status)"></span>
+                                </td>
+                                <td x-show="userRole === 'treasurer'">
+                                    <button x-show="payment.status === 'pending'" class="btn btn-primary" style="padding: 0.25rem 0.75rem; font-size: 0.75rem;" @click="approvePayment(payment.id)">Valider</button>
+                                </td>
+                            </tr>
+                        </template>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        <!-- Nouveau paiement -->
+        <div x-show="activeTab === 'new' && userRole === 'assistant_admin'" class="p-6">
+            <div class="space-y-4">
+                <div>
+                    <h3 class="text-lg font-semibold flex items-center gap-2">
+                        <i data-lucide="plus" class="h-5 w-5"></i>
+                        Nouvelle demande de paiement
+                    </h3>
+                    <p class="text-sm text-muted-foreground">Enregistrer une nouvelle demande de droit de plaidoirie</p>
+                </div>
+                <form @submit.prevent="submitPayment" class="space-y-4">
+                    <div class="grid grid-cols-2 gap-4">
+                        <div class="space-y-2">
+                            <label for="lawyerId" class="text-sm font-medium">ID Avocat</label>
+                            <input id="lawyerId" x-model="newPayment.lawyerId" placeholder="AV001" required class="input"/>
+                        </div>
+                        <div class="space-y-2">
+                            <label for="lawyerName" class="text-sm font-medium">Nom de l'avocat</label>
+                            <input id="lawyerName" x-model="newPayment.lawyerName" placeholder="Maître Amadou" required class="input"/>
+                        </div>
+                    </div>
+                    <div class="grid grid-cols-2 gap-4">
+                        <div class="space-y-2">
+                            <label for="caseNumber" class="text-sm font-medium">Numéro d'affaire</label>
+                            <input id="caseNumber" x-model="newPayment.caseNumber" placeholder="AFF-2024-001" required class="input"/>
+                        </div>
+                        <div class="space-y-2">
+                            <label for="amount" class="text-sm font-medium">Montant (FCFA)</label>
+                            <input id="amount" type="number" x-model="newPayment.amount" placeholder="50000" required class="input"/>
+                        </div>
+                    </div>
+                    <div class="space-y-2">
+                        <label for="description" class="text-sm font-medium">Description</label>
+                        <input id="description" x-model="newPayment.description" placeholder="Affaire civile - Divorce" required class="input"/>
+                    </div>
+                    <button type="submit" class="btn btn-primary w-full">
+                        <i data-lucide="plus" class="h-4 w-4 mr-2"></i>
+                        Enregistrer la demande
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+    <script>
+        document.addEventListener('alpine:init', () => {
+            Alpine.data('plaidoirie', () => ({
+                activeTab: 'list',
+                userRole: 'assistant_admin',
+                paymentRequests: [
+                    {
+                        id: '1',
+                        lawyerId: 'AV001',
+                        lawyerName: 'Maître Amadou',
+                        caseNumber: 'AFF-2024-001',
+                        amount: 50000,
+                        date: '2024-01-15',
+                        status: 'pending',
+                        description: 'Affaire civile - Divorce'
+                    },
+                    {
+                        id: '2',
+                        lawyerId: 'AV002',
+                        lawyerName: 'Maître Fatimatou',
+                        caseNumber: 'AFF-2024-002',
+                        amount: 75000,
+                        date: '2024-01-14',
+                        status: 'approved',
+                        description: 'Affaire commerciale - Contrat'
+                    }
+                ],
+                newPayment: {
+                    lawyerId: '',
+                    lawyerName: '',
+                    caseNumber: '',
+                    amount: '',
+                    description: ''
+                },
+                get pendingTotal() {
+                    return this.paymentRequests.filter(p => p.status === 'pending').reduce((sum, p) => sum + p.amount, 0);
+                },
+                get approvedTotal() {
+                    return this.paymentRequests.filter(p => p.status === 'approved').reduce((sum, p) => sum + p.amount, 0);
+                },
+                get pendingCount() {
+                    return this.paymentRequests.filter(p => p.status === 'pending').length;
+                },
+                get approvedCount() {
+                    return this.paymentRequests.filter(p => p.status === 'approved').length;
+                },
+                getStatusText(status) {
+                    switch (status) {
+                        case 'pending': return 'En attente';
+                        case 'approved': return 'Validé';
+                        case 'rejected': return 'Rejeté';
+                        default: return status;
+                    }
+                },
+                submitPayment() {
+                    const payment = {
+                        id: Date.now().toString(),
+                        lawyerId: this.newPayment.lawyerId,
+                        lawyerName: this.newPayment.lawyerName,
+                        caseNumber: this.newPayment.caseNumber,
+                        amount: parseFloat(this.newPayment.amount),
+                        date: new Date().toISOString().split('T')[0],
+                        status: 'pending',
+                        description: this.newPayment.description
+                    };
+                    this.paymentRequests.unshift(payment);
+                    this.newPayment = { lawyerId: '', lawyerName: '', caseNumber: '', amount: '', description: '' };
+                    this.showToast("Demande enregistrée", "La demande de paiement a été enregistrée avec succès");
+                    this.activeTab = 'list';
+                },
+                approvePayment(id) {
+                    const paymentIndex = this.paymentRequests.findIndex(p => p.id === id);
+                    if (paymentIndex !== -1) {
+                        this.paymentRequests[paymentIndex].status = 'approved';
+                        this.showToast("Paiement validé", "Le paiement a été approuvé avec succès");
+                    }
+                },
+                logout() {
+                    if (confirm('Êtes-vous sûr de vouloir vous déconnecter ?')) {
+                        window.location.href = "{{ url_for('auth.logout') }}";
+                    }
+                },
+                showToast(title, description) {
+                    const toast = document.createElement('div');
+                    toast.className = 'fixed top-4 right-4 bg-card border border-border rounded-lg p-4 shadow-lg z-50';
+                    toast.innerHTML = `
+                        <div class="font-medium">${title}</div>
+                        <div class="text-sm text-muted-foreground">${description}</div>
+                    `;
+                    document.body.appendChild(toast);
+                    setTimeout(() => { toast.remove(); }, 3000);
+                }
+            }))
+        })
+        document.addEventListener('DOMContentLoaded', function() {
+            lucide.createIcons();
+        });
+    </script>
+</div>
+{% endblock %}

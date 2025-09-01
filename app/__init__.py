@@ -61,8 +61,9 @@ def create_app(config_name='default'):
     
     # Import des modèles pour les migrations
     from app.models import user, avocat, droit_plaidoirie, cabinet_avocat, \
-                          acte_avocat, acte_document, assistance_juridique, cotisation, \
-                          formation, sanction_disciplinaire
+                           acte_document, assistance_juridique, 
+                         acte_avocat, cotisation, \
+                          formation, fond, operation_fond, sanction_disciplinaire
     
     return app
 

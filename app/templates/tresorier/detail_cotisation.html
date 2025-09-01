@@ -1,0 +1,511 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Détail Cotisation {{ annee }}</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+            border-bottom: 2px solid #007bff;
+            padding-bottom: 15px;
+        }
+        .btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 14px;
+            margin: 5px;
+            text-decoration: none;
+            display: inline-block;
+        }
+        .btn-secondary { background-color: #6c757d; color: white; }
+        .btn-success { background-color: #28a745; color: white; }
+        .btn:hover { opacity: 0.8; }
+        
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+        .stat-card {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 8px;
+            text-align: center;
+            border: 1px solid #e9ecef;
+        }
+        .stat-number {
+            font-size: 28px;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+        .stat-label {
+            font-size: 14px;
+            color: #666;
+            text-transform: uppercase;
+        }
+        
+        .filters {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+            display: flex;
+            gap: 15px;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+        .filter-group {
+            display: flex;
+            gap: 5px;
+            align-items: center;
+        }
+        
+        .table-container {
+            overflow-x: auto;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 20px;
+        }
+        th, td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid #ddd;
+        }
+        th {
+            background-color: #f8f9fa;
+            font-weight: bold;
+            position: sticky;
+            top: 0;
+        }
+        tr:hover {
+            background-color: #f5f5f5;
+        }
+        
+        .statut-badge {
+            padding: 4px 8px;
+            border-radius: 12px;
+            font-size: 11px;
+            font-weight: bold;
+            text-transform: uppercase;
+        }
+        .statut-paye { background: #d4edda; color: #155724; }
+        .statut-impaye { background: #f8d7da; color: #721c24; }
+        .statut-en-retard { background: #fff3cd; color: #856404; }
+        
+        .search-box {
+            padding: 8px 12px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            width: 250px;
+        }
+        
+        .pagination {
+            display: flex;
+            justify-content: center;
+            gap: 5px;
+            margin-top: 20px;
+        }
+        .pagination button {
+            padding: 8px 12px;
+            border: 1px solid #ddd;
+            background: white;
+            cursor: pointer;
+            border-radius: 4px;
+        }
+        .pagination button.active {
+            background: #007bff;
+            color: white;
+            border-color: #007bff;
+        }
+        .pagination button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        
+        .export-actions {
+            margin-bottom: 20px;
+            text-align: right;
+        }
+        
+        .no-results {
+            text-align: center;
+            padding: 40px;
+            color: #666;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <div>
+                <h1>📊 Cotisation {{ annee }}</h1>
+                <p style="color: #666; margin: 0;">Gestion détaillée des paiements</p>
+            </div>
+            <div>
+                <a href="javascript:history.back()" class="btn btn-secondary">← Retour</a>
+                <!-- Bouton d'ajout de paiement uniquement pour l'assistant comptable -->
+                {% if current_user.role == 'assistant_comptable' %}
+                <button class="btn btn-success" onclick="openQuickPaymentModal()">+ Nouveau Paiement</button>
+                {% endif %}
+            </div>
+        </div>
+        
+        <!-- Statistiques de la cotisation -->
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-number" style="color: #007bff;">{{ cotisations|length }}</div>
+                <div class="stat-label">Total Avocats</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number" style="color: #28a745;">{{ cotisations|selectattr('statut', 'equalto', 'paye')|list|length }}</div>
+                <div class="stat-label">Payés</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number" style="color: #dc3545;">{{ cotisations|selectattr('statut', 'equalto', 'impaye')|list|length }}</div>
+                <div class="stat-label">Impayés</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number" style="color: #007bff;">
+                    {{ "{:,.0f}".format(cotisations|map(attribute='montant')|sum) }} FCFA
+                </div>
+                <div class="stat-label">Montant Total</div>
+            </div>
+        </div>
+        
+        <!-- Filtres et recherche -->
+        <div class="filters">
+            <div class="filter-group">
+                <label>Recherche:</label>
+                <input type="text" id="searchInput" class="search-box" placeholder="Nom de l'avocat...">
+            </div>
+            <div class="filter-group">
+                <label>Statut:</label>
+                <select id="statutFilter" onchange="filterTable()">
+                    <option value="">Tous</option>
+                    <option value="paye">Payés</option>
+                    <option value="impaye">Impayés</option>
+                </select>
+            </div>
+            <div class="filter-group">
+                <label>Qualification:</label>
+                <select id="qualificationFilter" onchange="filterTable()">
+                    <option value="">Toutes</option>
+                    <option value="stagiaire">Stagiaires</option>
+                    <option value="titulaire">Titulaires</option>
+                    <option value="conseil_ordre">Conseil de l'Ordre</option>
+                </select>
+            </div>
+        </div>
+        
+        <!-- Actions d'export -->
+        <div class="export-actions">
+            <button class="btn btn-secondary" onclick="exportToCSV()">📊 Exporter CSV</button>
+            <button class="btn btn-secondary" onclick="printTable()">🖨️ Imprimer</button>
+        </div>
+        
+        <!-- Tableau des cotisations -->
+        <div class="table-container">
+            <table id="cotisationsTable">
+                <thead>
+                    <tr>
+                        <th>Avocat</th>
+                        <th>Qualification</th>
+                        <th>Montant</th>
+                        <th>Échéance</th>
+                        <th>Date Paiement</th>
+                        <th>Statut</th>
+                        {% if current_user.role == 'assistant_comptable' %}
+                        <th>Actions</th>
+                        {% endif %}
+                    </tr>
+                </thead>
+                <tbody id="cotisationsBody">
+                    {% for cotisation in cotisations %}
+                    <tr data-statut="{{ cotisation.statut }}" data-qualification="{{ cotisation.qualification }}">
+                        <td>{{ cotisation.nom_complet }}</td>
+                        <td>
+                            {% if cotisation.qualification == 'stagiaire' %}
+                                🎓 Stagiaire
+                            {% elif cotisation.qualification == 'titulaire' %}
+                                ⚖️ Titulaire
+                            {% elif cotisation.qualification == 'conseil_ordre' %}
+                                👨‍⚖️ Conseil
+                            {% else %}
+                                {{ cotisation.qualification }}
+                            {% endif %}
+                        </td>
+                        <td><strong>{{ "{:,.0f}".format(cotisation.montant) }} FCFA</strong></td>
+                        <td>{{ cotisation.d_echeance }}</td>
+                        <td>
+                            {% if cotisation.d_paiement %}
+                                {{ cotisation.d_paiement }}
+                            {% else %}
+                                <em style="color: #999;">Non payé</em>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if cotisation.statut == 'paye' %}
+                                <span class="statut-badge statut-paye">✅ Payé</span>
+                            {% else %}
+                                <span class="statut-badge statut-impaye">❌ Impayé</span>
+                            {% endif %}
+                        </td>
+                        {% if current_user.role == 'assistant_comptable' %}
+                        <td>
+                            {% if cotisation.statut == 'impaye' %}
+                                <button class="btn btn-success" style="padding: 5px 10px; font-size: 12px;" 
+                                        onclick="payerCotisation({{ cotisation.avocat_id }}, '{{ cotisation.nom_complet }}')">
+                                    💰 Payer
+                                </button>
+                            {% else %}
+                                <span style="color: #28a745; font-size: 12px;">✅ Payé</span>
+                            {% endif %}
+                        </td>
+                        {% endif %}
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        
+        <div id="noResults" class="no-results" style="display: none;">
+            <h3>Aucun résultat</h3>
+            <p>Aucune cotisation ne correspond aux critères de recherche.</p>
+        </div>
+        
+        <!-- Pagination -->
+        <div class="pagination" id="pagination"></div>
+    </div>
+    
+    <!-- Modal pour paiement rapide (assistant comptable uniquement) -->
+    {% if current_user.role == 'assistant_comptable' %}
+    <div id="quickPaymentModal" class="modal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1000;">
+        <div style="background: white; margin: 10% auto; padding: 20px; width: 400px; border-radius: 8px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                <h3>💰 Paiement Rapide</h3>
+                <span onclick="closeQuickPaymentModal()" style="cursor: pointer; font-size: 20px;">&times;</span>
+            </div>
+            <div id="paymentInfo"></div>
+            <div style="text-align: right; margin-top: 20px;">
+                <button onclick="closeQuickPaymentModal()" class="btn btn-secondary">Annuler</button>
+                <button id="confirmPayment" class="btn btn-success">Confirmer le Paiement</button>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+    
+    <script>
+        let currentPage = 1;
+        const rowsPerPage = 20;
+        let filteredRows = [];
+        
+        // Initialisation
+        document.addEventListener('DOMContentLoaded', function() {
+            document.getElementById('searchInput').addEventListener('input', filterTable);
+            filterTable(); // Application des filtres initiaux
+        });
+        
+        function filterTable() {
+            const searchTerm = document.getElementById('searchInput').value.toLowerCase();
+            const statutFilter = document.getElementById('statutFilter').value;
+            const qualificationFilter = document.getElementById('qualificationFilter').value;
+            
+            const rows = document.querySelectorAll('#cotisationsTable tbody tr');
+            filteredRows = [];
+            
+            rows.forEach(row => {
+                const nom = row.cells[0].textContent.toLowerCase();
+                const statut = row.dataset.statut;
+                const qualification = row.dataset.qualification;
+                
+                const matchSearch = nom.includes(searchTerm);
+                const matchStatut = !statutFilter || statut === statutFilter;
+                const matchQualification = !qualificationFilter || qualification === qualificationFilter;
+                
+                if (matchSearch && matchStatut && matchQualification) {
+                    filteredRows.push(row);
+                    row.style.display = '';
+                } else {
+                    row.style.display = 'none';
+                }
+            });
+            
+            // Afficher message si aucun résultat
+            const noResults = document.getElementById('noResults');
+            if (filteredRows.length === 0) {
+                noResults.style.display = 'block';
+            } else {
+                noResults.style.display = 'none';
+            }
+            
+            updatePagination();
+        }
+        
+        function updatePagination() {
+            const totalPages = Math.ceil(filteredRows.length / rowsPerPage);
+            const paginationContainer = document.getElementById('pagination');
+            
+            if (totalPages <= 1) {
+                paginationContainer.innerHTML = '';
+                return;
+            }
+            
+            let paginationHTML = '';
+            
+            // Bouton précédent
+            paginationHTML += `<button ${currentPage === 1 ? 'disabled' : ''} onclick="changePage(${currentPage - 1})">‹</button>`;
+            
+            // Numéros de pages
+            for (let i = 1; i <= totalPages; i++) {
+                paginationHTML += `<button class="${currentPage === i ? 'active' : ''}" onclick="changePage(${i})">${i}</button>`;
+            }
+            
+            // Bouton suivant
+            paginationHTML += `<button ${currentPage === totalPages ? 'disabled' : ''} onclick="changePage(${currentPage + 1})">›</button>`;
+            
+            paginationContainer.innerHTML = paginationHTML;
+            
+            // Affichage des lignes pour la page courante
+            displayCurrentPage();
+        }
+        
+        function displayCurrentPage() {
+            const startIndex = (currentPage - 1) * rowsPerPage;
+            const endIndex = startIndex + rowsPerPage;
+            
+            filteredRows.forEach((row, index) => {
+                if (index >= startIndex && index < endIndex) {
+                    row.style.display = '';
+                } else {
+                    row.style.display = 'none';
+                }
+            });
+        }
+        
+        function changePage(page) {
+            currentPage = page;
+            updatePagination();
+        }
+        
+        function exportToCSV() {
+            const csvContent = "data:text/csv;charset=utf-8,Avocat,Qualification,Montant,Echéance,Date Paiement,Statut\n" +
+                filteredRows.map(row => {
+                    const cells = row.cells;
+                    return `"${cells[0].textContent}","${cells[1].textContent}","${cells[2].textContent}","${cells[3].textContent}","${cells[4].textContent}","${cells[5].textContent}"`;
+                }).join('\n');
+            
+            const link = document.createElement('a');
+            link.setAttribute('href', encodeURI(csvContent));
+            link.setAttribute('download', `cotisation_{{ annee }}.csv`);
+            link.click();
+        }
+        
+        function printTable() {
+            const printWindow = window.open('', '_blank');
+            printWindow.document.write(`
+                <html>
+                <head>
+                    <title>Cotisation {{ annee }}</title>
+                    <style>
+                        body { font-family: Arial, sans-serif; }
+                        table { width: 100%; border-collapse: collapse; }
+                        th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+                        th { background-color: #f2f2f2; }
+                        .header { text-align: center; margin-bottom: 20px; }
+                    </style>
+                </head>
+                <body>
+                    <div class="header">
+                        <h1>Cotisation {{ annee }}</h1>
+                        <p>Date d'impression: ${new Date().toLocaleDateString()}</p>
+                    </div>
+                    ${document.getElementById('cotisationsTable').outerHTML}
+                </body>
+                </html>
+            `);
+            printWindow.document.close();
+            printWindow.print();
+        }
+        
+        {% if current_user.role == 'assistant_comptable' %}
+        let currentPaymentAvocat = null;
+        
+        function openQuickPaymentModal() {
+            document.getElementById('quickPaymentModal').style.display = 'block';
+        }
+        
+        function closeQuickPaymentModal() {
+            document.getElementById('quickPaymentModal').style.display = 'none';
+            currentPaymentAvocat = null;
+        }
+        
+        function payerCotisation(avocatId, nomAvocat) {
+            currentPaymentAvocat = avocatId;
+            document.getElementById('paymentInfo').innerHTML = `
+                <p><strong>Avocat:</strong> ${nomAvocat}</p>
+                <p><strong>Année:</strong> {{ annee }}</p>
+                <p style="color: #28a745;"><strong>Confirmer le paiement de cette cotisation ?</strong></p>
+            `;
+            openQuickPaymentModal();
+        }
+        
+        document.getElementById('confirmPayment').addEventListener('click', function() {
+            if (!currentPaymentAvocat) return;
+            
+            this.innerHTML = '⏳ Traitement...';
+            this.disabled = true;
+            
+            fetch('/assistant-comptable/enregistrer-paiement-cotisation', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    avocat_id: currentPaymentAvocat,
+                    annee_cotisation: {{ annee }}
+                })
+            })
+            .then(response => response.json())
+            .then(result => {
+                if (result.success) {
+                    alert('✅ ' + result.message);
+                    location.reload();
+                } else {
+                    alert('❌ ' + result.error);
+                }
+            })
+            .catch(error => {
+                alert('❌ Erreur de connexion : ' + error);
+            })
+            .finally(() => {
+                this.innerHTML = 'Confirmer le Paiement';
+                this.disabled = false;
+                closeQuickPaymentModal();
+            });
+        });
+        {% endif %}
+    </script>
+</body>
+</html>

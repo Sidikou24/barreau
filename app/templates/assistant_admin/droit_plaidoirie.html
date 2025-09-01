@@ -1,0 +1,53 @@
+{% extends "base.html" %}
+{% block title %}Droits de Plaidoirie{% endblock %}
+{% block content %}
+<div class="container">
+    <h1>Mes droits de plaidoirie</h1>
+
+    <div class="row mt-4">
+        <div class="col-md-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5>Liste des droits</h5>
+                </div>
+                <div class="card-body">
+                    <table class="table table-striped">
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>Détail Timbres</th>
+                                <th>Montant</th>
+                                <th>Statut</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for droit in droits %}
+                            <tr>
+                                <td>{{ droit.plaidoirie_id }}</td>
+                                <td>{{ droit.detail_timbres }}</td>
+                                <td>{{ droit.montant_formate }}</td>
+                                <td>
+                                    <span class="badge bg-{{ 'warning' if droit.statut == 'en_attente' else 'success' if droit.statut == 'valide' else 'danger' }}">
+                                        {{ droit.statut }}
+                                    </span>
+                                </td>
+                                <td>
+                                    <a href="{{ url_for('assistant_admin.detail_droit', plaidoirie_id=droit.plaidoirie_id) }}" class="btn btn-sm btn-info">
+                                        Détails
+                                    </a>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <a href="{{ url_for('assistant_admin.nouveau_droit') }}" class="btn btn-primary mt-3">
+        Créer un nouveau droit
+    </a>
+</div>
+{% endblock %}
