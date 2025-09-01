@@ -73,6 +73,17 @@ def change_password():
         db.session.commit()
 
         flash("Votre mot de passe a été mis à jour avec succès ✅", "success")
-        return redirect(url_for(f"{current_user.role}.dashboard"))
+        role_to_bp = {
+            'batonnier': 'batonnier',
+            'avocat': 'avocat',
+            'assistant_comptable': 'assistant_comptable',
+            'assistant_administratif': 'assistant_admin',
+            'tresorier': 'tresorier',
+            'secretaire': 'secretaire',
+        }
+        bp = role_to_bp.get(current_user.role)
+        if bp:
+            return redirect(url_for(f"{bp}.dashboard"))
+        return redirect(url_for('auth.login'))
 
     return render_template('auth/change_password.html')

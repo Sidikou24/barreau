@@ -82,8 +82,13 @@ coverage.xml
 
 # Fichiers de déploiement
 instance/
+instance/uploads/
 .webassets-cache
 .scrapy
+
+# Anciens emplacements d'uploads à ignorer si existants
+app/uploads/
+uploads/
 
 # Fichiers macOS
 .AppleDouble
