@@ -1,13 +1,11 @@
 # Environnement virtuel Python
-barreau/
 venv/
 env/
 ENV/
-.env/
 .venv/
-.qodo/
+.env/
 
-# Fichiers de variables d'environnement (contiennent des données sensibles)
+# Fichiers de variables d'environnement
 .env
 .env.local
 .env.development.local
@@ -15,7 +13,7 @@ ENV/
 .env.production.local
 
 # Fichiers de cache Python
-__pycache__/
+_pycache_/
 *.py[cod]
 *$py.class
 *.so
@@ -39,37 +37,14 @@ share/python-wheels/
 *.egg
 MANIFEST
 
-# Fichiers de base de données
+# Fichiers de base de données (locaux uniquement)
 *.db
-*.sqlite
 *.sqlite3
 *.db-journal
-*.sql
-migrations/versions/*  # Exclut les fichiers de migration générés (gardez le dossier migrations/ mais pas les fichiers .py générés)
 
 # Fichiers de logs et temporaires
 *.log
 logs/
-.npm
-.npmrc
-.nvmrc
-.node_repl_history
-
-# Fichiers IDE et éditeurs
-.vscode/
-.idea/
-*.swp
-*.swo
-*~
-.DS_Store
-.DS_Store?
-._*
-.Spotlight-V100
-.Trashes
-ehthumbs.db
-Thumbs.db
-
-# Fichiers de coverage et tests
 .coverage
 .coverage.*
 .cache
@@ -80,26 +55,27 @@ coverage.xml
 .hypothesis/
 .pytest_cache/
 
-# Fichiers de déploiement
-instance/
-instance/uploads/
-.webassets-cache
-.scrapy
+# Fichiers IDE et éditeurs
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
 
-# Anciens emplacements d'uploads à ignorer si existants
-app/uploads/
-uploads/
-
-# Fichiers macOS
+# Fichiers macOS/Windows
 .AppleDouble
 .LSOverride
 Icon
 ._*
-
-# Fichiers Windows
 [Tt]humbs.db
+ehthumbs.db
+Thumbs.db
 
-# Fichiers divers
+# Fichiers de déploiement et cache
+instance/
+.webassets-cache
+.scrapy
 celerybeat-schedule
 celerybeat.pid
 .mypy_cache/
@@ -126,8 +102,7 @@ dmypy.json
 _site/
 .sass-cache/
 .jekyll-cache/
-.sass-cache/
 .jekyll-metadata
 
-# Fichiers spécifiques à ce projet
-# (Ajoutez ici les fichiers spécifiques à votre projet qui ne doivent pas être versionnés)
+# Exemple : Ignorer uniquement les fichiers SQL de dump (pas les migrations)
+data/dump.sql
