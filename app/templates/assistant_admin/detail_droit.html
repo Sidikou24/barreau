@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+{% block title %}Détail du Droit{% endblock %}
+{% block content %}
+<div class="container">
+    <h1>Détail du droit de plaidoirie</h1>
+
+    <div class="row mt-4">
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h5>Informations</h5>
+                </div>
+                <div class="card-body">
+                    <p><strong>ID :</strong> {{ droit.plaidoirie_id }}</p>
+                    <p><strong>Détail des timbres :</strong> {{ droit.detail_timbres }}</p>
+                    <p><strong>Montant :</strong> {{ droit.montant_formate }}</p>
+                    <p><strong>Statut :</strong>
+                        <span class="badge bg-{{ 'warning' if droit.statut == 'en_attente' else 'success' if droit.statut == 'valide' else 'danger' }}">
+                            {{ droit.statut }}
+                        </span>
+                    </p>
+                    <p><strong>Date de création :</strong> {{ droit.date_creation.strftime('%d/%m/%Y à %H:%M') }}</p>
+                    {% if droit.validateur %}
+                    <p><strong>Validé par :</strong> {{ droit.validateur.nom }} {{ droit.validateur.prenom }}</p>
+                    <p><strong>Date de validation :</strong> {{ droit.date_validation.strftime('%d/%m/%Y à %H:%M') }}</p>
+                    {% endif %}
+                    {% if droit.commentaire %}
+                    <p><strong>Commentaire :</strong> {{ droit.commentaire }}</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <a href="{{ url_for('assistant_admin.droit_plaidoirie') }}" class="btn btn-secondary mt-3">
+        Retour à la liste
+    </a>
+</div>
+{% endblock %}

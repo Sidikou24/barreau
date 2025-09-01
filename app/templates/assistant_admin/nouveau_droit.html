@@ -1,0 +1,56 @@
+<!-- app/templates/assistant_admin/nouveau_droit.html -->
+{% extends "base.html" %}
+{% block title %}Nouveau Droit de Plaidoirie{% endblock %}
+{% block content %}
+<div class="container">
+    <h1>Créer un nouveau droit de plaidoirie</h1>
+
+    <form method="POST" action="{{ url_for('assistant_admin.nouveau_droit') }}">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <div class="row mt-4">
+            <div class="col-md-6">
+                <div class="card">
+                    <div class="card-header">
+                        <h5>Sélection des timbres</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="mb-3">
+                            <label for="timbres_2500" class="form-label">Timbres 2 500 FCFA</label>
+                            <input type="number" class="form-control" id="timbres_2500" name="timbres_2500" min="0" value="0">
+                        </div>
+                        <div class="mb-3">
+                            <label for="timbres_5000" class="form-label">Timbres 5 000 FCFA</label>
+                            <input type="number" class="form-control" id="timbres_5000" name="timbres_5000" min="0" value="0">
+                        </div>
+                        <div class="mb-3">
+                            <label for="timbres_10000" class="form-label">Timbres 10 000 FCFA</label>
+                            <input type="number" class="form-control" id="timbres_10000" name="timbres_10000" min="0" value="0">
+                        </div>
+                        <div class="mb-3">
+                            <label for="montant_total" class="form-label">Montant total</label>
+                            <input type="text" class="form-control" id="montant_total" readonly>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <button type="submit" class="btn btn-primary mt-3">Créer le droit</button>
+        <a href="{{ url_for('assistant_admin.droit_plaidoirie') }}" class="btn btn-secondary mt-3">Annuler</a>
+    </form>
+</div>
+
+<script>
+    // Calcul du montant total en temps réel
+    document.querySelectorAll('input[type="number"]').forEach(input => {
+        input.addEventListener('change', function() {
+            const timbres_2500 = parseInt(document.getElementById('timbres_2500').value) || 0;
+            const timbres_5000 = parseInt(document.getElementById('timbres_5000').value) || 0;
+            const timbres_10000 = parseInt(document.getElementById('timbres_10000').value) || 0;
+
+            const montant = (timbres_2500 * 2500) + (timbres_5000 * 5000) + (timbres_10000 * 10000);
+            document.getElementById('montant_total').value = montant.toLocaleString() + " FCFA";
+        });
+    });
+</script>
+{% endblock %}

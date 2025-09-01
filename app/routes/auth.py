@@ -1,6 +1,6 @@
 # app/routes/auth.py
 from flask import Blueprint, render_template, request, redirect, url_for, flash
-from flask_login import login_user, logout_user, login_required
+from flask_login import current_user, login_user, logout_user, login_required
 from app.models.user import User
 from app.models import db
 
@@ -39,6 +39,7 @@ def login():
         else:
             flash('Email ou mot de passe incorrect.', 'danger')
     
+
     return render_template('auth/login.html')
 
 @auth_bp.route('/logout')
@@ -47,3 +48,42 @@ def logout():
     logout_user()
     flash('Vous avez été déconnecté avec succès.', 'info')
     return redirect(url_for('auth.login'))
+
+@auth_bp.route('/change-password', methods=['GET', 'POST'])
+@login_required
+def change_password():
+    if request.method == 'POST':
+        old_password = request.form.get('old_password')
+        new_password = request.form.get('new_password')
+        confirm_password = request.form.get('confirm_password')
+
+        # Vérification de l'ancien mot de passe
+        if not current_user.check_password(old_password):
+            flash("L'ancien mot de passe est incorrect.", "danger")
+            return render_template('auth/change_password.html')
+
+        # Vérification correspondance nouveau / confirmation
+        if new_password != confirm_password:
+            flash("Les mots de passe ne correspondent pas.", "danger")
+            return render_template('auth/change_password.html')
+
+        # Mise à jour du mot de passe
+        current_user.set_password(new_password)
+        current_user.must_change_password = False
+        db.session.commit()
+
+        flash("Votre mot de passe a été mis à jour avec succès ✅", "success")
+        role_to_bp = {
+            'batonnier': 'batonnier',
+            'avocat': 'avocat',
+            'assistant_comptable': 'assistant_comptable',
+            'assistant_administratif': 'assistant_admin',
+            'tresorier': 'tresorier',
+            'secretaire': 'secretaire',
+        }
+        bp = role_to_bp.get(current_user.role)
+        if bp:
+            return redirect(url_for(f"{bp}.dashboard"))
+        return redirect(url_for('auth.login'))
+
+    return render_template('auth/change_password.html')

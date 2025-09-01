@@ -1,0 +1,139 @@
+<!-- templates/assistant_comptable/gestion_fond.html -->
+{% extends "base.html" %}
+{% block title %}Gestion des Fonds{% endblock %}
+{%block style%}
+{% endblock %}
+{% block content %}
+<div x-data="{ showCredit: null, showDebit: null, showTransfer: null, showDetail: null }" class="p-6">
+
+  <h2 class="text-2xl font-bold mb-4">Gestion des Fonds</h2>
+
+  <!-- Tableau des fonds -->
+  <table class="fond-table">
+    <thead>
+      <tr>
+        <th>Nom du fond</th>
+        <th>Montant actuel</th>
+        <th>Actions</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for fond in fonds %}
+      <tr>
+        <td>{{ fond.nom }}</td>
+        <td>{{ fond.montant }} FCFA</td>
+        <td>
+          <!-- Boutons d'action -->
+          <button @click="showCredit={{ fond.id }}" class="btn btn-green">➕ Créditer</button>
+          {% if fond.nom not in ['Droits de plaidoirie','Cotisations'] %}
+            <button @click="showDebit={{ fond.id }}" class="btn btn-red">➖ Débiter</button>
+            <button @click="showTransfer={{ fond.id }}" class="btn btn-blue">⇆ Transférer</button>
+          {% endif %}
+          <button @click="showDetail={{ fond.id }}" class="btn btn-gray">📄 Détail</button>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+
+  <!-- === Modals === -->
+
+  {% for fond in fonds %}
+  <!-- Créditer -->
+  <div class="modal" x-show="showCredit==={{ fond.id }}" x-transition>
+    <div class="modal-box">
+      <h3>Créditer {{ fond.nom }}</h3>
+      <form method="POST" action="{{ url_for('assistant_comptable.crediter_fond') }}">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <input type="hidden" name="fond_id" value="{{ fond.id }}">
+        <label>Provenance</label>
+        <input type="text" name="provenance" required>
+        <label>Montant</label>
+        <input type="number" name="montant" required>
+        <label>Date de réception</label>
+        <input type="date" name="date_reception" required>
+        <label>Commentaire</label>
+        <textarea name="commentaire"></textarea>
+        <div class="modal-actions">
+          <button type="submit" class="btn btn-green">Valider</button>
+          <button type="button" @click="showCredit=null" class="btn btn-gray">Fermer</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Débiter -->
+  <div class="modal" x-show="showDebit==={{ fond.id }}">
+    <div class="modal-box">
+      <h3>Débiter {{ fond.nom }}</h3>
+      <form method="POST" action="{{ url_for('assistant_comptable.debiter_fond') }}">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <input type="hidden" name="fond_id" value="{{ fond.id }}">
+        <label>Motif</label>
+        <input type="text" name="motif" required>
+        <label>Montant (max {{ fond.montant }})</label>
+        <input type="number" name="montant" max="{{ fond.montant }}" required>
+        <label>Date de dépense</label>
+        <input type="date" name="date_depense" required>
+        <div class="modal-actions">
+          <button type="submit" class="btn btn-red">Enregistrer</button>
+          <button type="button" @click="showDebit=null" class="btn btn-gray">Fermer</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Transférer -->
+  <div class="modal" x-show="showTransfer==={{ fond.id }}">
+    <div class="modal-box">
+      <h3>Transférer depuis {{ fond.nom }}</h3>
+      <form method="POST" action="{{ url_for('assistant_comptable.transférer_fond') }}">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <input type="hidden" name="fond_source_id" value="{{ fond.id }}">
+        <label>Destination</label>
+        <select name="fond_destination_id" required>
+          {% for f in fonds if f.id != fond.id %}
+          <option value="{{ f.id }}">{{ f.nom }}</option>
+          {% endfor %}
+        </select>
+        <label>Montant (max {{ fond.montant }})</label>
+        <input type="number" name="montant" max="{{ fond.montant }}" required>
+        <div class="modal-actions">
+          <button type="submit" class="btn btn-blue">Transférer</button>
+          <button type="button" @click="showTransfer=null" class="btn btn-gray">Fermer</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Détail -->
+  <div class="modal" x-show="showDetail==={{ fond.id }}">
+    <div class="modal-box">
+      <h3>Détails du fond {{ fond.nom }}</h3>
+      <table class="fond-table">
+        <thead>
+          <tr>
+            <th>Date</th><th>Type</th><th>Montant</th><th>Statut</th><th>Initiateur</th><th>Validateur</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for op in fond.operations %}
+          <tr>
+            <td>{{ op.date_creation.strftime('%d/%m/%Y') }}</td>
+            <td>{{ op.type_operation }}</td>
+            <td>{{ op.montant }}</td>
+            <td>{{ op.statut }}</td>
+            <td>{{ op.user.nom if op.user else '-' }}</td>
+            <td>{{ op.validateur.nom if op.validateur else '-' }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+      <div class="modal-actions">
+        <button type="button" @click="showDetail=null" class="btn btn-gray">Fermer</button>
+      </div>
+    </div>
+  </div>
+  {% endfor %}
+</div>
+{% endblock %}

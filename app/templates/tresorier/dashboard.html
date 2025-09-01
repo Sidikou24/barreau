@@ -1,0 +1,53 @@
+{% extends "base.html" %}
+{% block title %}Dashboard Trésorier{% endblock %}
+{% block content %}
+<div class="container">
+    <h1>Tableau de bord - Trésorier</h1>
+    <p>Bienvenue {{ current_user.nom }} {{ current_user.prenom }} 👋</p>
+
+    <div class="row mt-4">
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h5>Statistiques</h5>
+                </div>
+                <div class="card-body">
+                    <p>Droits en attente : {{ stats.en_attente }}</p>
+                    <p>Droits validés aujourd'hui : {{ stats.valides_aujourdhui }}</p>
+                    <p>Total ce mois : {{ stats.total_mois }}</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h5>Derniers droits à valider</h5>
+                </div>
+                <div class="card-body">
+                    <ul class="list-group">
+                        {% for droit in droits_attente %}
+                        <li class="list-group-item">
+                            <a href="{{ url_for('tresorier.detail_droit', plaidoirie_id=droit.plaidoirie_id) }}">
+                                {{ droit.detail_timbres }} - {{ droit.montant_formate }}
+                            </a>
+                            <span class="badge bg-warning">en attente</span>
+                        </li>
+                        {% endfor %}
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <a href="{{ url_for('tresorier.droit_plaidoirie') }}" class="btn btn-primary mt-3">
+        Voir tous les droits
+    </a>
+    <a href="{{ url_for('auth.change_password') }}" class="btn btn-secondary mt-3">
+        Modifier mon mot de passe
+    </a>
+    <a href="{{ url_for('tresorier.gestion_fonds') }}" class="btn btn-secondary mt-3">
+        Gestion des fonds
+    </a>
+    <a href="{{ url_for('tresorier.cotisations') }}">💰 Cotisations</a>
+</div>
+{% endblock %}

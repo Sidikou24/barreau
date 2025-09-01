@@ -3,6 +3,7 @@
 from flask import Flask, redirect, url_for
 from flask_sqlalchemy import SQLAlchemy
 from flask_login import LoginManager
+from flask_wtf.csrf import CSRFProtect
 from flask_migrate import Migrate
 from app.config import config
 
@@ -10,6 +11,7 @@ from app.config import config
 db = SQLAlchemy()
 login_manager = LoginManager()
 migrate = Migrate()
+csrf = CSRFProtect()
 
 def create_app(config_name='default'):
     app = Flask(__name__)
@@ -21,6 +23,7 @@ def create_app(config_name='default'):
     db.init_app(app)
     login_manager.init_app(app)
     migrate.init_app(app, db)
+    csrf.init_app(app)
     
     # Configuration de Flask-Login
     login_manager.login_view = 'auth.login'
@@ -40,6 +43,7 @@ def create_app(config_name='default'):
     from app.routes.assistant_admin import assistant_admin_bp
     from app.routes.tresorier import tresorier_bp
     from app.routes.secretaire import secretaire_bp
+    from app.routes.actesAvocat import actes_avocat_bp
     
     app.register_blueprint(auth_bp, url_prefix='/auth')
     app.register_blueprint(batonnier_bp, url_prefix='/batonnier')
@@ -48,6 +52,7 @@ def create_app(config_name='default'):
     app.register_blueprint(assistant_admin_bp, url_prefix='/assistant-admin')
     app.register_blueprint(tresorier_bp, url_prefix='/tresorier')
     app.register_blueprint(secretaire_bp, url_prefix='/secretaire')
+    app.register_blueprint(actes_avocat_bp, url_prefix='/assistant-admin/actes-avocats')
     
     # Route par défaut
     @app.route('/')
@@ -56,8 +61,8 @@ def create_app(config_name='default'):
     
     # Import des modèles pour les migrations
     from app.models import user, avocat, droit_plaidoirie, cabinet_avocat, \
-                          acte_avocat, assistance_juridique, cotisation, \
-                          formation, sanction_disciplinaire
+                           acte_document, assistance_juridique, acte_avocat, cotisation, \
+                          formation, fond, operation_fond, sanction_disciplinaire
     
     return app
 

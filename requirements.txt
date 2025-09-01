@@ -1,10 +1,10 @@
-
-# requirements.txt
-Flask==2.3.3
+Flask
+Flask-SQLAlchemy
+psycopg
 Flask-SQLAlchemy==3.0.5
 Flask-Login==0.6.3
 Flask-Migrate==4.0.5
-psycopg2-binary==2.9.7
+psycopg2-binary==2.9.9
 python-dotenv==1.0.0
 Werkzeug==2.3.7
 Jinja2==3.1.2

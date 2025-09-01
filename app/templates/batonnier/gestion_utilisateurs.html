@@ -1,0 +1,215 @@
+<!-- templates/batonnier/gestion_utilisateurs.html -->
+{% extends "layout.html" %}
+
+{% block title %}Gestion des Utilisateurs - Barreau du Niger{% endblock %}
+
+{% block content %}
+<div x-data="gestionUtilisateurs" class="space-y-6">
+    <div class="flex items-center justify-between">
+        <div>
+            <h1 class="text-3xl font-bold tracking-tight">Gestion des Utilisateurs</h1>
+            <p class="text-muted-foreground">Gérez les utilisateurs du système de gestion du Barreau</p>
+        </div>
+        <button class="btn btn-primary" @click="showCreateDialog = true">
+            <i data-lucide="user-plus" class="h-4 w-4 mr-2"></i> Nouveau utilisateur
+        </button>
+    </div>
+
+    <!-- Barre de recherche -->
+    <div class="card p-6">
+        <div class="flex items-center justify-between mb-4">
+            <div class="flex-1 max-w-md">
+                <div class="relative">
+                    <i data-lucide="search" class="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground"></i>
+                    <input type="text" placeholder="Rechercher un utilisateur..." x-model="searchTerm" class="input pl-8"/>
+                </div>
+            </div>
+            <div class="text-sm text-muted-foreground" x-text="filteredUsers.length + ' utilisateur(s)'"></div>
+        </div>
+    </div>
+
+    <!-- Liste des utilisateurs -->
+    <div class="grid gap-4">
+        <template x-for="user in filteredUsers" :key="user.id">
+            <div class="card p-6">
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center gap-4">
+                        <div class="avatar h-12 w-12 text-lg">
+                            <span x-text="user.name.charAt(0)"></span>
+                        </div>
+                        <div>
+                            <div class="flex items-center gap-2">
+                                <h3 class="font-semibold" x-text="user.name"></h3>
+                                <span 
+                                    class="badge"
+                                    :class="user.active ? 'badge-green' : 'badge-red'"
+                                    x-text="user.active ? 'Actif' : 'Inactif'"
+                                ></span>
+                            </div>
+                            <p class="text-sm text-muted-foreground" x-text="user.email"></p>
+                            <p class="text-xs text-muted-foreground" x-text="getRoleLabel(user.role)"></p>
+                        </div>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <!-- Toggle Status -->
+                        <div class="flex items-center gap-2">
+                            <span class="text-sm text-muted-foreground">Actif</span>
+                            <label class="switch">
+                                <input type="checkbox" :checked="user.active" @change="toggleUserStatus(user.id)">
+                                <span class="slider"></span>
+                            </label>
+                        </div>
+                        <!-- Action Buttons -->
+                        <button class="btn btn-ghost" style="padding: 0.25rem 0.5rem;" @click="openEditDialog(user)">
+                            <i data-lucide="edit" class="h-4 w-4"></i>
+                        </button>
+                        <!--<button 
+                            class="btn btn-ghost" 
+                            style="padding: 0.25rem 0.5rem;" 
+                            @click="deleteUser(user.id)"
+                            :disabled="user.id === currentUserId"
+                            :class="{ 'opacity-50 cursor-not-allowed': user.id === currentUserId }"
+                        >
+                            <i data-lucide="trash-2" class="h-4 w-4"></i>
+                        </button>-->
+                    </div>
+                </div>
+            </div>
+        </template>
+    </div>
+
+    <!-- Modal Créer Utilisateur -->
+    <div x-show="showCreateDialog" class="modal" @click.self="showCreateDialog = false">
+        <div class="modal-content">
+            <div class="mb-6">
+                <h2 class="text-xl font-semibold">Créer un nouvel utilisateur</h2>
+                <p class="text-sm text-muted-foreground">Ajoutez un nouveau compte utilisateur au système</p>
+            </div>
+            <form @submit.prevent="createUser" class="space-y-4">
+                <div class="space-y-2">
+                    <label for="name" class="text-sm font-medium">Nom complet *</label>
+                    <input id="name" x-model="formData.name" placeholder="Nom complet de l'utilisateur" required class="input"/>
+                </div>
+                <div class="space-y-2">
+                    <label for="email" class="text-sm font-medium">Email *</label>
+                    <input id="email" type="email" x-model="formData.email" placeholder="adresse@email.com" required class="input"/>
+                </div>
+                <div class="space-y-2">
+                    <label for="role" class="text-sm font-medium">Rôle *</label>
+                    <select x-model="formData.role" required class="select">
+                        <option value="">Sélectionner un rôle</option>
+                        <option value="assistant_administratif">Assistant Administratif</option>
+                        <option value="secretaire">Secrétaire de l'Ordre</option>
+                        <option value="tresorier">Trésorière</option>
+                        <option value="batonnier">Bâtonnier</option>
+                        <option value="assistant_comptable">Comptable</option>
+                        <option value="avocat">Avocat</option>
+                    </select>
+                </div>
+                <div class="flex gap-2 pt-4">
+                    <button type="submit" class="btn btn-primary flex-1">Créer l'utilisateur</button>
+                    <button type="button" class="btn btn-outline" @click="showCreateDialog = false">Annuler</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal Modifier Utilisateur -->
+    <div x-show="showEditDialog" class="modal" @click.self="showEditDialog = false">
+        <div class="modal-content">
+            <div class="mb-6">
+                <h2 class="text-xl font-semibold">Modifier l'utilisateur</h2>
+                <p class="text-sm text-muted-foreground">Modifiez les informations de l'utilisateur</p>
+            </div>
+            <form @submit.prevent="editUser" class="space-y-4">
+                <div class="space-y-2">
+                    <label for="editName" class="text-sm font-medium">Nom complet *</label>
+                    <input id="editName" x-model="formData.name" placeholder="Nom complet de l'utilisateur" required class="input"/>
+                </div>
+                <div class="space-y-2">
+                    <label for="editEmail" class="text-sm font-medium">Email *</label>
+                    <input id="editEmail" type="email" x-model="formData.email" placeholder="adresse@email.com" required class="input"/>
+                </div>
+                <div class="space-y-2">
+                    <label for="editRole" class="text-sm font-medium">Rôle *</label>
+                    <select x-model="formData.role" required class="select">
+                        <option value="">Sélectionner un rôle</option>
+                        <option value="assistant_administratif">Assistant Administratif</option>
+                        <option value="secretaire">Secrétaire de l'Ordre</option>
+                        <option value="tresorier">Trésorière</option>
+                        <option value="batonnier">Bâtonnier</option>
+                        <option value="assitant_comptable">Comptable</option>
+                        <option value="avocat">Avocat</option>
+                    </select>
+                </div>
+                <div class="flex gap-2 pt-4">
+                    <button type="submit" class="btn btn-primary flex-1">Sauvegarder</button>
+                    <button type="button" class="btn btn-outline" @click="showEditDialog = false">Annuler</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+     // Filtrer les utilisateurs
+    function filterUsers() {
+        const searchTerm = document.getElementById('searchInput').value.toLowerCase();
+        const userItems = document.querySelectorAll('.user-item');
+        userItems.forEach(item => {
+            const name = item.getAttribute('data-name').toLowerCase();
+            const email = item.getAttribute('data-email').toLowerCase();
+            if (name.includes(searchTerm) || email.includes(searchTerm)) {
+                item.style.display = 'block';
+            } else {
+                item.style.display = 'none';
+            }
+        });
+    }
+
+    // Ouvrir le modal de modification
+    function openEditModal(id, nom, prenom, email, role, statut, telephone, adresse, dateNaissance) {
+        document.getElementById('editUserId').value = id;
+        document.getElementById('editNom').value = nom;
+        document.getElementById('editPrenom').value = prenom;
+        document.getElementById('editEmail').value = email;
+        document.getElementById('editRole').value = role;
+        document.getElementById('editTelephone').value = telephone;
+        document.getElementById('editAdresse').value = adresse;
+        document.getElementById('editDateNaissance').value = dateNaissance;
+
+        // Afficher/masquer les champs spécifiques aux avocats
+        if (role === 'avocat') {
+            document.getElementById('editAvocatFields').style.display = 'block';
+        } else {
+            document.getElementById('editAvocatFields').style.display = 'none';
+        }
+
+        // Configurer l'action du formulaire
+        const form = document.getElementById('editUserForm');
+        form.action = `/batonnier/utilisateurs/${id}/modifier`;
+
+        // Afficher le modal
+        document.getElementById('editUserModal').classList.remove('hidden');
+    }
+
+    // Afficher/masquer les champs spécifiques aux avocats dans le modal de création
+    document.getElementById('role').addEventListener('change', function() {
+        const avocatFields = document.getElementById('avocatFields');
+        avocatFields.style.display = this.value === 'avocat' ? 'block' : 'none';
+    });
+
+    // Fermer les modals si on clique en dehors
+    document.getElementById('createUserModal').addEventListener('click', function(e) {
+        if (e.target === this) {
+            this.classList.add('hidden');
+        }
+    });
+
+    document.getElementById('editUserModal').addEventListener('click', function(e) {
+        if (e.target === this) {
+            this.classList.add('hidden');
+        }
+    });
+</script>
+{% endblock %}
