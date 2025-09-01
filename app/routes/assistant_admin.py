@@ -158,8 +158,6 @@ def assistance_annuler(assistance_id):
         flash(f"Erreur: {str(e)}", 'danger')
     return redirect(url_for('assistant_admin.dashboard') + '#assistance-juridique')
 
-                         )
-
 @assistant_admin_bp.route('/detail-droit/<int:plaidoirie_id>')
 @login_required
 @role_required('assistant_administratif')

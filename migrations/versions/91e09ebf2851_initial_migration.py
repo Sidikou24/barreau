@@ -1,8 +1,8 @@
-"""Migration initiale
+"""initial migration
 
-Revision ID: 357d4eb5cd13
+Revision ID: 91e09ebf2851
 Revises: 
-Create Date: 2025-08-27 16:09:23.315282
+Create Date: 2025-09-01 14:33:30.903189
 
 """
 from alembic import op
@@ -10,7 +10,7 @@ import sqlalchemy as sa
 
 
 # revision identifiers, used by Alembic.
-revision = '357d4eb5cd13'
+revision = '91e09ebf2851'
 down_revision = None
 branch_labels = None
 depends_on = None
@@ -25,6 +25,14 @@ def upgrade():
     sa.Column('adresse', sa.Text(), nullable=True),
     sa.Column('date_creation', sa.DateTime(), nullable=True),
     sa.PrimaryKeyConstraint('cabinet_id')
+    )
+    op.create_table('fonds',
+    sa.Column('id', sa.Integer(), nullable=False),
+    sa.Column('nom', sa.String(length=100), nullable=False),
+    sa.Column('montant', sa.Integer(), nullable=True),
+    sa.Column('description', sa.Text(), nullable=True),
+    sa.PrimaryKeyConstraint('id'),
+    sa.UniqueConstraint('nom')
     )
     op.create_table('users',
     sa.Column('id', sa.Integer(), nullable=False),
@@ -59,9 +67,48 @@ def upgrade():
     sa.Column('responsabilite_civile', sa.Text(), nullable=True),
     sa.Column('formation', sa.Text(), nullable=True),
     sa.Column('date_creation', sa.DateTime(), nullable=True),
-    sa.ForeignKeyConstraint(['user_id'], ['users.id'], ),
+    sa.ForeignKeyConstraint(['user_id'], ['users.id'], ondelete='CASCADE'),
     sa.PrimaryKeyConstraint('avocat_id'),
     sa.UniqueConstraint('user_id')
+    )
+    op.create_table('droits_plaidoirie',
+    sa.Column('plaidoirie_id', sa.Integer(), nullable=False),
+    sa.Column('montant', sa.Integer(), nullable=False),
+    sa.Column('timbres_2500', sa.Integer(), nullable=True),
+    sa.Column('timbres_5000', sa.Integer(), nullable=True),
+    sa.Column('timbres_10000', sa.Integer(), nullable=True),
+    sa.Column('agent_perception', sa.Integer(), nullable=False),
+    sa.Column('date_creation', sa.DateTime(), nullable=True),
+    sa.Column('statut', sa.Enum('en_attente', 'valide', 'rejete', name='plaidoirie_status'), nullable=True),
+    sa.Column('valide_par', sa.Integer(), nullable=True),
+    sa.Column('date_validation', sa.DateTime(), nullable=True),
+    sa.Column('commentaire', sa.Text(), nullable=True),
+    sa.ForeignKeyConstraint(['agent_perception'], ['users.id'], ),
+    sa.ForeignKeyConstraint(['valide_par'], ['users.id'], ),
+    sa.PrimaryKeyConstraint('plaidoirie_id')
+    )
+    op.create_table('operations_fonds',
+    sa.Column('id', sa.Integer(), nullable=False),
+    sa.Column('fond_id', sa.Integer(), nullable=False),
+    sa.Column('type_operation', sa.String(length=20), nullable=False),
+    sa.Column('montant', sa.Integer(), nullable=False),
+    sa.Column('provenance', sa.String(length=200), nullable=True),
+    sa.Column('motif', sa.String(length=200), nullable=True),
+    sa.Column('fond_destination_id', sa.Integer(), nullable=True),
+    sa.Column('date_reception', sa.Date(), nullable=True),
+    sa.Column('date_depense', sa.Date(), nullable=True),
+    sa.Column('date_creation', sa.DateTime(), nullable=True),
+    sa.Column('statut', sa.String(length=20), nullable=True),
+    sa.Column('user_id', sa.Integer(), nullable=True),
+    sa.Column('validateur_id', sa.Integer(), nullable=True),
+    sa.Column('date_validation', sa.DateTime(), nullable=True),
+    sa.Column('commentaire', sa.Text(), nullable=True),
+    sa.Column('motif_annulation', sa.Text(), nullable=True),
+    sa.ForeignKeyConstraint(['fond_destination_id'], ['fonds.id'], ),
+    sa.ForeignKeyConstraint(['fond_id'], ['fonds.id'], ),
+    sa.ForeignKeyConstraint(['user_id'], ['users.id'], ),
+    sa.ForeignKeyConstraint(['validateur_id'], ['users.id'], ),
+    sa.PrimaryKeyConstraint('id')
     )
     op.create_table('actes_avocat',
     sa.Column('acte_id', sa.Integer(), nullable=False),
@@ -119,24 +166,6 @@ def upgrade():
     sa.ForeignKeyConstraint(['avocat_id'], ['avocats.avocat_id'], ),
     sa.PrimaryKeyConstraint('cotisation_id')
     )
-    op.create_table('droits_plaidoirie',
-    sa.Column('plaidoirie_id', sa.Integer(), nullable=False),
-    sa.Column('avocat_id', sa.Integer(), nullable=False),
-    sa.Column('numero_affaire', sa.String(length=50), nullable=False),
-    sa.Column('nature_affaire', sa.String(length=200), nullable=False),
-    sa.Column('tribunal', sa.String(length=100), nullable=False),
-    sa.Column('montant', sa.Integer(), nullable=False),
-    sa.Column('agent_perception', sa.Integer(), nullable=True),
-    sa.Column('date_creation', sa.DateTime(), nullable=True),
-    sa.Column('statut', sa.Enum('en_attente', 'valide', 'rejete', name='plaidoirie_status'), nullable=True),
-    sa.Column('valide_par', sa.Integer(), nullable=True),
-    sa.Column('date_validation', sa.DateTime(), nullable=True),
-    sa.Column('commentaire', sa.Text(), nullable=True),
-    sa.ForeignKeyConstraint(['agent_perception'], ['users.id'], ),
-    sa.ForeignKeyConstraint(['avocat_id'], ['avocats.avocat_id'], ),
-    sa.ForeignKeyConstraint(['valide_par'], ['users.id'], ),
-    sa.PrimaryKeyConstraint('plaidoirie_id')
-    )
     op.create_table('formations',
     sa.Column('formation_id', sa.Integer(), nullable=False),
     sa.Column('avocat_id', sa.Integer(), nullable=False),
@@ -166,19 +195,36 @@ def upgrade():
     sa.PrimaryKeyConstraint('sanction_id'),
     sa.UniqueConstraint('numero_decision')
     )
+    op.create_table('acte_documents',
+    sa.Column('id', sa.Integer(), nullable=False),
+    sa.Column('acte_id', sa.Integer(), nullable=False),
+    sa.Column('storage_path', sa.String(length=255), nullable=False),
+    sa.Column('original_name', sa.String(length=255), nullable=False),
+    sa.Column('mime_type', sa.String(length=100), nullable=True),
+    sa.Column('size_bytes', sa.Integer(), nullable=True),
+    sa.Column('sha256_hash', sa.String(length=64), nullable=True),
+    sa.Column('uploaded_at', sa.DateTime(), nullable=True),
+    sa.Column('uploaded_by', sa.Integer(), nullable=False),
+    sa.ForeignKeyConstraint(['acte_id'], ['actes_avocat.acte_id'], ondelete='CASCADE'),
+    sa.ForeignKeyConstraint(['uploaded_by'], ['users.id'], ),
+    sa.PrimaryKeyConstraint('id')
+    )
     # ### end Alembic commands ###
 
 
 def downgrade():
     # ### commands auto generated by Alembic - please adjust! ###
+    op.drop_table('acte_documents')
     op.drop_table('sanctions_disciplinaires')
     op.drop_table('formations')
-    op.drop_table('droits_plaidoirie')
     op.drop_table('cotisations')
     op.drop_table('cabinet_membres')
     op.drop_table('assistance_juridique')
     op.drop_table('actes_avocat')
+    op.drop_table('operations_fonds')
+    op.drop_table('droits_plaidoirie')
     op.drop_table('avocats')
     op.drop_table('users')
+    op.drop_table('fonds')
     op.drop_table('cabinets_avocat')
     # ### end Alembic commands ###
